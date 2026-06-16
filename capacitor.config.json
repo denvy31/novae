@@ -1,0 +1,8 @@
+{
+  "appId": "com.novae.astronomy",
+  "appName": "Novaé",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

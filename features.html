@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Novaé — Fonctionnalités</title><style>@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { background: #fff; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; color: #222a38;
+       font-size: 12pt; line-height: 1.62; margin: 0; }
+h1 { font-size: 32pt; text-align: center; color: #20243a; margin: 30pt 0 6pt; letter-spacing: 0.5px; }
+h1::before { content: "\2726"; display: block; color: #6a4cff; font-size: 36pt; margin-bottom: 12pt; }
+h1 + p { text-align: center; color: #5a6172; font-size: 12.5pt; }
+h2 { font-size: 19pt; color: #20243a; border-bottom: 2.5px solid #6a4cff; padding-bottom: 6pt;
+     margin: 24pt 0 12pt; page-break-before: always; page-break-after: avoid; }
+h3 { font-size: 14pt; color: #2d4a86; margin: 18pt 0 5pt; page-break-after: avoid; }
+h3 + p, h3 + ul { page-break-before: avoid; }
+p { margin: 7pt 0; }
+table { border-collapse: collapse; width: 100%; margin: 11pt 0; font-size: 10.5pt; }
+thead { display: table-header-group; }   /* repeat header on each page */
+tr { page-break-inside: avoid; }
+th { background: #20283f; color: #fff; text-align: left; padding: 6pt 8pt; font-weight: 600; }
+td { border: 1px solid #d2d7e2; padding: 6pt 8pt; vertical-align: top; }
+tbody tr:nth-child(even) { background: #f4f6fb; }
+blockquote { background: #f1ecff; border-left: 4px solid #6a4cff; padding: 9pt 14pt;
+             color: #3a3a55; margin: 12pt 0; font-style: italic; border-radius: 0 7px 7px 0;
+             page-break-inside: avoid; }
+code { background: #eef1f7; padding: 1pt 4pt; border-radius: 3px;
+       font-family: ui-monospace, Menlo, monospace; font-size: 10pt; }
+pre { background: #0d1326; color: #dce4ff; padding: 12pt 14pt; border-radius: 8px;
+      font-size: 9.5pt; line-height: 1.5; page-break-inside: avoid; }
+pre code { background: none; color: inherit; padding: 0; font-size: 9.5pt; }
+ul { margin: 7pt 0; padding-left: 22pt; }
+li { margin: 4pt 0; page-break-inside: avoid; }
+li.sub { list-style: circle; margin-left: 16pt; }
+hr { border: none; border-top: 1px solid #e2e6ee; margin: 18pt 0; }
+a { color: #2d4a86; text-decoration: none; }
+strong { color: #20243a; }
+</style></head><body><h1>✦ NOVAÉ — Documentation des fonctionnalités</h1>
+<p><strong>Application d'astronomie en réalité augmentée · Version 2.0 · Juin 2026</strong></p>
+<p><em>Édition enrichie — suivi temps réel, satellites, planètes photoréalistes, frise cosmique</em></p>
+<blockquote><strong>À propos de ce document.</strong> Il fusionne la vision produit complète de Novaé v2.0 avec l'<strong>état réel du prototype</strong> (application web React, dossier <code>novae/</code>). Chaque fonctionnalité porte deux indications : sa <strong>disponibilité</strong> prévue (Gratuit / Premium) et son <strong>état dans le prototype actuel</strong>.</blockquote>
+<p><strong>Légende état prototype</strong></p>
+<ul>
+<li>✅ <strong>Implémenté</strong> — fonctionne dans le prototype web actuel</li>
+<li>🟡 <strong>Partiel</strong> — présent mais simplifié ou incomplet</li>
+<li>📋 <strong>Prévu</strong> — spécifié, pas encore codé</li>
+</ul>
+<hr>
+<h2>Table des matières</h2>
+<p>1. Présentation générale</p>
+<p>2. Fonctionnalités</p>
+<ul>
+<li class="sub">2.1 Ciel en direct — suivi par mouvement du téléphone</li>
+<li class="sub">2.2 Carte du ciel interactive et fidèle</li>
+<li class="sub">2.3 Planètes photoréalistes en rotation</li>
+<li class="sub">2.4 Satellites &amp; ISS en orbite (temps réel)</li>
+<li class="sub">2.5 Identification des étoiles &amp; constellations (AR)</li>
+<li class="sub">2.6 Ciel profond : nébuleuses, galaxies &amp; trous noirs</li>
+<li class="sub">2.7 Frise temporelle réversible — du présent au Big Bang</li>
+<li class="sub">2.8 Filtre Supernovæ, hypernovæ &amp; étoiles instables</li>
+<li class="sub">2.9 Carte de pollution lumineuse</li>
+<li class="sub">2.10 Notifications &amp; actualités spatiales</li>
+<li class="sub">2.11 Bibliothèque personnelle &amp; captures</li>
+<li class="sub">2.12 Multilingue, mode nuit &amp; accessibilité</li>
+</ul>
+<p>3. Problèmes corrigés &amp; fiabilité</p>
+<p>4. Avantages concurrentiels</p>
+<p>5. Pourquoi les étoiles vieillissent et explosent (pédagogie)</p>
+<p>6. Spécifications techniques</p>
+<p>7. Lancer le prototype</p>
+<p>8. Structure du projet</p>
+<p>9. État d'implémentation &amp; limites</p>
+<p>10. Roadmap</p>
+<hr>
+<h2>1. Présentation générale</h2>
+<p>Novaé est une application d'astronomie conçue pour offrir l'expérience d'observation</p>
+<p>du ciel la plus réaliste et immersive possible. Inspirée des données Gaia, NASA, ESA,</p>
+<p>Hubble et James Webb, elle combine précision scientifique et esthétique spatiale —</p>
+<p>du curieux débutant à l'astronome amateur expérimenté.</p>
+<p><strong>Nouveautés v2.0 :</strong> le ciel suit les mouvements du téléphone en temps réel</p>
+<p>(boussole + gyroscope), les planètes adoptent un rendu <strong>photoréaliste</strong> sur lequel</p>
+<p>on zoome et qui tourne en direct, les satellites et l'ISS sont visibles en orbite,</p>
+<p>une frise temporelle réversible remonte jusqu'au Big Bang, les trous noirs sont</p>
+<p>représentés, un flux d'actualités relaie l'actualité spatiale, et une section</p>
+<p>pédagogique explique pourquoi les étoiles explosent en supernova.</p>
+<table><thead><tr><th>Chiffre clé</th><th>Valeur (produit cible)</th><th>Prototype actuel</th></tr></thead><tbody>
+<tr><td>Étoiles cataloguées</td><td>&gt; 1 milliard (Gaia DR3)</td><td>~5 000 (Hipparcos mag ≤ 6) ✅</td></tr>
+<tr><td>Planètes suivies</td><td>8 + Lune + Pluton</td><td>8 + Pluton + Soleil + lunes ✅</td></tr>
+<tr><td>Satellites artificiels</td><td>8 000+ (TLE / NORAD)</td><td>ISS · Hubble · Tiangong en direct ✅</td></tr>
+<tr><td>Supernovæ / hypernovæ</td><td>100+</td><td>8 / 4 sélection ✅</td></tr>
+<tr><td>Trous noirs notables</td><td>20+</td><td>5 (Sgr A<em>, M87</em>, Cygnus X-1…) ✅</td></tr>
+<tr><td>Profondeur temporelle</td><td>Présent → 13,8 Md d'années</td><td>Heure réglable + sim. solaire 🟡</td></tr>
+<tr><td>Constellations</td><td>88 (IAU)</td><td>88 (noms FR) ✅</td></tr>
+<tr><td>Objets du ciel profond</td><td>13 000+ (NGC/IC)</td><td>107 Messier ✅</td></tr>
+<tr><td>Langues</td><td>50+</td><td>FR (noms d'astres FR) 🟡</td></tr>
+</tbody></table>
+<hr>
+<h2>2. Fonctionnalités</h2>
+<h3>2.1 Ciel en direct — suivi par mouvement du téléphone</h3>
+<p><strong>Disponibilité : Gratuit · Nouveau v2.0 — État : ✅ Implémenté</strong></p>
+<p>Levez votre téléphone vers le ciel : la carte s'aligne sur la direction visée.</p>
+<p>Quand vous tournez, vous balayez la voûte céleste dans le même sens (fenêtre AR).</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Direction calculée par <strong>matrice de rotation complète</strong> (où pointe le dos du téléphone) : l'azimut reste juste <strong>quelle que soit l'inclinaison</strong> — un seul calibrage suffit, plus besoin de recalibrer en bougeant. ✅</li>
+<li>Hauteur <strong>basée sur la gravité</strong> : lever le téléphone = regarder plus haut (plus d'inversion). ✅</li>
+<li><strong>Roulis</strong> : incliner le téléphone fait pivoter le ciel avec lui. ✅</li>
+<li><strong>Suivi fluide 60 fps</strong> : positions mises en cache (recalcul 1×/s) + canvas non réalloué à chaque image. ✅</li>
+<li><strong>Calibrage manuel</strong> : glisser pour aligner sur un astre connu + bouton « Recalibrer ». ✅</li>
+<li><strong>Réticule central « pointez pour identifier »</strong> : l'objet visé s'affiche, touchez pour sa fiche. ✅</li>
+<li>Capteur unique (absolu prioritaire) pour éviter les tremblements relatif/absolu. ✅</li>
+<li>Correction automatique de déclinaison magnétique (modèle WMM). 📋</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Calcul</td><td>Matrice de rotation (alpha·beta·gamma) → direction dos appareil</td></tr>
+<tr><td>Capteurs</td><td>Magnétomètre · gyroscope · accéléromètre (API DeviceOrientation)</td></tr>
+<tr><td>Suivi</td><td>Boucle 60 fps, positions cachées (1×/s)</td></tr>
+<tr><td>Calibrage</td><td>Manuel (glisser) + recalibrer</td></tr>
+<tr><td>Pré-requis mobile</td><td><strong>HTTPS</strong> obligatoire (serveur fourni)</td></tr>
+</tbody></table>
+<hr>
+<h3>2.2 Carte du ciel interactive et fidèle</h3>
+<p><strong>Disponibilité : Gratuit — État : ✅ Implémenté</strong></p>
+<p>Navigation sur une voûte céleste au rendu fidèle, en <strong>projection stéréographique</strong> :</p>
+<p>le ciel est rond comme une sphère, sans déformation ovale aux bords.</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Catalogue réel chargé à l'exécution : ~5 000 étoiles (positions RA/Dec). ✅</li>
+<li>Couleurs d'étoiles fidèles à l'indice <strong>B–V</strong> (bleu O/B → rouge M). ✅</li>
+<li>Voie Lactée calculée sur le vrai plan galactique. ✅</li>
+<li>88 constellations IAU, tracés et <strong>noms en français</strong>, activables. ✅</li>
+<li>Limite de magnitude dynamique selon le zoom. ✅</li>
+<li>Repli hors-ligne automatique (ciel réduit intégré). ✅</li>
+<li>Position calculée pour le lieu/heure exacts (horizon local). 📋</li>
+<li>Réfraction atmosphérique près de l'horizon, scintillation. 📋</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur (cible)</th><th>Prototype</th></tr></thead><tbody>
+<tr><td>Catalogues</td><td>Hipparcos · Tycho-2 · Gaia DR3</td><td>d3-celestial (Hipparcos mag ≤ 6)</td></tr>
+<tr><td>Précision</td><td>&lt; 0,1 arcseconde</td><td>positions catalogue réelles</td></tr>
+<tr><td>Projection</td><td>—</td><td>Stéréographique (round, fluide)</td></tr>
+</tbody></table>
+<hr>
+<h3>2.3 Planètes photoréalistes en rotation, vues de près</h3>
+<p><strong>Disponibilité : Gratuit · Enrichi v2.0 — État : ✅ Implémenté</strong></p>
+<p>Les planètes ne sont plus des points : touchez-en une pour vous en approcher et la</p>
+<p>voir tourner, avec de <strong>vraies textures photographiques</strong>.</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Clic sur une planète → vue rapprochée plein cadre, fiche détaillée. ✅</li>
+<li><strong>Textures réelles</strong> (cartes équirectangulaires) plaquées par mapping sphérique. ✅</li>
+<li>Rotation de la surface en direct (Grande Tache Rouge, continents, calottes). ✅</li>
+<li>Saturne : anneaux avec divisions et inclinaison. ✅</li>
+<li><strong>Lunes en orbite</strong> : Lune, Phobos/Déimos, galiléennes, Titan/Encelade, Triton, Charon. ✅</li>
+<li>Vue du système solaire de dessus, orbites animées, vitesse réglable. ✅</li>
+<li>Halo atmosphérique + ombrage solaire (terminateur). ✅</li>
+<li>Rétrogradations expliquées ; textures jusqu'à 8K. 📋</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur (cible)</th><th>Prototype</th></tr></thead><tbody>
+<tr><td>Positions</td><td>VSOP87 haute précision</td><td>Orbites circulaires simplifiées</td></tr>
+<tr><td>Corps</td><td>8 planètes + Lune + Pluton + lunes</td><td>idem (lunes principales)</td></tr>
+<tr><td>Textures</td><td>NASA/JPL jusqu'à 8K</td><td>threex.planets 1k–2k réelles</td></tr>
+<tr><td>Rotation</td><td>Période &amp; axe réels</td><td>durée du jour réelle (simplifiée)</td></tr>
+</tbody></table>
+<hr>
+<h3>2.4 Satellites &amp; ISS en orbite, en temps réel</h3>
+<p><strong>Disponibilité : Premium · Nouveau v2.0 — État : 📋 Prévu</strong></p>
+<p>Voir les objets artificiels qui croisent au-dessus de vous. 8 000+ satellites suivis</p>
+<p>via les éléments orbitaux publics (TLE/NORAD), propagés en direct.</p>
+<p><strong>Sous-fonctionnalités (prévues)</strong></p>
+<ul>
+<li>ISS, Hubble, Starlink, satellites météo/GPS en direct.</li>
+<li>Trace au sol et trajectoire prévue ; alerte de passage visible.</li>
+<li>Superposition AR du point lumineux qui traverse le ciel.</li>
+<li>Filtres par catégorie ; fiche (altitude, vitesse, opérateur, lancement).</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Source orbitale</td><td>TLE / NORAD (propagation SGP4)</td></tr>
+<tr><td>Objets</td><td>8 000+ (MAJ quotidienne)</td></tr>
+<tr><td>Position ISS</td><td>NASA Horizons API · temps réel</td></tr>
+<tr><td>Connexion</td><td>Réseau requis</td></tr>
+</tbody></table>
+<hr>
+<h3>2.5 Identification des étoiles &amp; constellations (AR)</h3>
+<p><strong>Disponibilité : Premium — État : 🟡 Partiel</strong></p>
+<p>Pointez l'appareil vers le ciel pour identifier chaque objet.</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Clic sur une étoile → fiche (magnitude, type spectral, RA/Dec). ✅</li>
+<li>Mode mouvement (gyroscope/boussole) pour explorer. ✅</li>
+<li>Fiche complète (distance, température K), AR caméra. 📋</li>
+<li>Noms traditionnels dans 12 cultures, mythologie illustrée. 📋</li>
+<li>Lever/coucher, élongation, visibilité pour votre position. 📋</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Étoiles identifiables</td><td>~5 000 (prototype) / &gt; 1 milliard (cible)</td></tr>
+<tr><td>Constellations</td><td>88 IAU ✅</td></tr>
+<tr><td>Cultures</td><td>1 (FR) / 12 (cible)</td></tr>
+</tbody></table>
+<hr>
+<h3>2.6 Ciel profond : nébuleuses, galaxies &amp; trous noirs</h3>
+<p><strong>Disponibilité : Premium · Enrichi v2.0 — État : 📋 Prévu</strong></p>
+<p>Explorer Messier, NGC et IC avec des visualisations Hubble/JWST. La v2.0 ajoute</p>
+<p>une catégorie dédiée aux trous noirs.</p>
+<p><strong>Sous-fonctionnalités (prévues)</strong></p>
+<ul>
+<li>Messier (110) et NGC/IC (13 000+).</li>
+<li>Nébuleuses en couleurs d'émission (Hα, OIII, SII) ; galaxies par morphologie.</li>
+<li>Trous noirs : disque d'accrétion, lentille gravitationnelle, anneau de photons.</li>
+<li>Sgr A<em> (centre galactique) et M87</em> (1ʳᵉ image, 2019) localisables.</li>
+<li>Trous noirs stellaires liés à un vestige de supernova (ex. Cygnus X-1).</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Catalogue Messier / NGC-IC</td><td>110 / 13 000+</td></tr>
+<tr><td>Trous noirs notables</td><td>20+ (Sgr A<em>, M87</em>, Cygnus X-1…)</td></tr>
+<tr><td>Filtres spectraux</td><td>Hα · OIII · SII · IR</td></tr>
+</tbody></table>
+<hr>
+<h3>2.7 Frise temporelle réversible — du présent au Big Bang</h3>
+<p><strong>Disponibilité : Premium · Enrichi v2.0 — État : 🟡 Partiel</strong></p>
+<p>Le curseur de temps fonctionne dans les deux sens : avancez pour voir le ciel futur,</p>
+<p>reculez pour remonter le fil de l'Univers.</p>
+<blockquote><strong>Note scientifique.</strong> On ne peut pas « filmer » le Big Bang : pendant ses 380 000 premières années l'Univers était opaque. La première lumière est le fond diffus cosmologique. Novaé présente donc l'histoire de l'Univers comme une <strong>chronologie commentée</strong>, pas comme une scène observable directement.</blockquote>
+<p><strong>Prototype</strong></p>
+<ul>
+<li>Simulation temporelle du <strong>système solaire</strong> (date + vitesse réglable, orbites). ✅</li>
+<li>Frise cosmique jusqu'au Big Bang (chronologie illustrée). 📋</li>
+<li>Précession des équinoxes, comparaison de deux dates/lieux, export calendrier. 📋</li>
+</ul>
+<table><thead><tr><th>Temps après le Big Bang</th><th>Étape</th><th>Ce que montre Novaé</th></tr></thead><tbody>
+<tr><td>13,8 Md d'années</td><td>Univers actuel</td><td>Le ciel observé</td></tr>
+<tr><td>~9 Md d'années</td><td>Naissance du Soleil</td><td>Formation du Système solaire</td></tr>
+<tr><td>~1 Md d'années</td><td>Premières galaxies</td><td>Galaxies primitives (JWST)</td></tr>
+<tr><td>~100–400 M d'années</td><td>Premières étoiles</td><td>Population III</td></tr>
+<tr><td>380 000 ans</td><td>Première lumière</td><td>Fond diffus cosmologique</td></tr>
+<tr><td>3 min</td><td>Noyaux légers</td><td>Hydrogène &amp; hélium</td></tr>
+<tr><td>&lt; 1 s</td><td>Soupe de particules</td><td>Schéma (non observable)</td></tr>
+<tr><td>t = 0</td><td>Big Bang</td><td>Origine de la chronologie</td></tr>
+</tbody></table>
+<hr>
+<h3>2.8 Filtre Supernovæ, hypernovæ &amp; étoiles instables</h3>
+<p><strong>Disponibilité : Premium · Exclusif Novaé — État : ✅ Implémenté</strong></p>
+<p>Visualisez les étoiles qui ont explosé et surveillez celles au bord de l'explosion.</p>
+<p><strong>Unique sur le marché.</strong> (La section 5 explique le mécanisme.)</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>✕ violet sur les supernovæ historiques. ✅</li>
+<li>✸ rouge sur les <strong>hypernovæ / candidates</strong> (Eta Carinae, WR 104…). ✅</li>
+<li>⚠ orange sur les étoiles instables (Bételgeuse, Antarès, Rigel). ✅</li>
+<li>Fiche : type (Ia, II, Ib/c), année, vestige, constellation. ✅</li>
+<li>Animation de l'explosion ; mode « ciel du passé » ; alerte SN galactique. 📋</li>
+</ul>
+<table><thead><tr><th>Supernova historique</th><th>Type</th><th>Année</th><th>Vestige</th></tr></thead><tbody>
+<tr><td>SN 1054 — Crabe (Taureau)</td><td>II</td><td>1054</td><td>Nébuleuse + pulsar</td></tr>
+<tr><td>SN 1006 (Loup)</td><td>Ia</td><td>1006</td><td>Vestige radio/X</td></tr>
+<tr><td>SN 1572 — Tycho (Cassiopée)</td><td>Ia</td><td>1572</td><td>Reste en expansion</td></tr>
+<tr><td>SN 1604 — Kepler (Ophiuchus)</td><td>Ia</td><td>1604</td><td>Reste de supernova</td></tr>
+<tr><td>SN 1987A (Grand Nuage de Magellan)</td><td>Ib/c</td><td>1987</td><td>Étoile à neutrons probable</td></tr>
+<tr><td>Cassiopée A</td><td>IIb</td><td>~1680</td><td>Vestige + étoile à neutrons</td></tr>
+</tbody></table>
+<table><thead><tr><th>Paramètre</th><th>Valeur (cible)</th><th>Prototype</th></tr></thead><tbody>
+<tr><td>Supernovæ</td><td>100+</td><td>8 emblématiques ✅</td></tr>
+<tr><td>Hypernovæ</td><td>—</td><td>4 candidates ✅</td></tr>
+<tr><td>Étoiles instables</td><td>28</td><td>4 ✅</td></tr>
+</tbody></table>
+<hr>
+<h3>2.9 Carte de pollution lumineuse</h3>
+<p><strong>Disponibilité : Gratuit (basique) · Premium (avancée) — État : ✅ Implémenté</strong></p>
+<p>Indicateur Bortle avec aperçu du ciel attendu.</p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Échelle de Bortle 1 → 9, nombre d'étoiles visibles estimé. ✅</li>
+<li>Aperçu visuel en direct (étoiles + Voie Lactée + halo au sol). ✅</li>
+<li>Suggestions de sites d'observation à proximité. ✅</li>
+<li>Carte mondiale satellite NOAA/VIIRS, météo temps réel, gêne lunaire. 📋</li>
+</ul>
+<table><thead><tr><th>Niveau</th><th>Description</th><th>Étoiles visibles</th></tr></thead><tbody>
+<tr><td>1</td><td>Ciel noir parfait</td><td>&gt; 10 000</td></tr>
+<tr><td>2–3</td><td>Ciel rural</td><td>4 000–10 000</td></tr>
+<tr><td>4–5</td><td>Périphérie rurale</td><td>1 500–4 000</td></tr>
+<tr><td>6–7</td><td>Banlieue</td><td>500–1 500</td></tr>
+<tr><td>8–9</td><td>Centre-ville</td><td>&lt; 500</td></tr>
+</tbody></table>
+<hr>
+<h3>2.10 Notifications &amp; actualités spatiales</h3>
+<p><strong>Disponibilité : Premium · Nouveau v2.0 — État : 🟡 Partiel</strong></p>
+<p><strong>Sous-fonctionnalités</strong></p>
+<ul>
+<li>Liste d'<strong>événements</strong> (éclipses, pluies de météores, conjonctions, aurores) avec compte à rebours J−n et filtres par type. ✅</li>
+<li>Fil d'actualité agrégé (NASA/ESA/observatoires) en temps réel. 📋</li>
+<li>Passages ISS/satellites depuis votre position ; aurores selon indice Kp. 📋</li>
+<li>Rappels J−7/J−1/J−0, intégration calendrier, rapport mensuel. 📋</li>
+</ul>
+<table><thead><tr><th>Paramètre</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Sources (cible)</td><td>NASA · ESA · NOAA SWPC · observatoires</td></tr>
+<tr><td>Préavis</td><td>30 jours</td></tr>
+<tr><td>Calcul passages</td><td>Local via GPS</td></tr>
+</tbody></table>
+<hr>
+<h3>2.11 Bibliothèque personnelle &amp; captures</h3>
+<p><strong>Disponibilité : Gratuit — État : 📋 Prévu</strong></p>
+<p>Journal d'observation : capture en un bouton, métadonnées auto (date, GPS, objets,</p>
+<p>Bortle, phase lunaire), albums automatiques, export 4K, statistiques, synchronisation</p>
+<p>iOS · Android · Web.</p>
+<hr>
+<h3>2.12 Multilingue, mode nuit &amp; accessibilité</h3>
+<p><strong>Disponibilité : Gratuit — État : 🟡 Partiel</strong></p>
+<ul>
+<li><strong>Mode nuit rouge</strong> intégral pour préserver la vision nocturne. ✅</li>
+<li>Noms de constellations en français (depuis le catalogue). ✅</li>
+<li>Calques activables (constellations, étiquettes, planètes, Voie Lactée). ✅</li>
+<li>50+ langues, RTL (arabe/hébreu/persan), narrations audio (12 cultures). 📋</li>
+<li>Mode daltonien, texte 80–160 %, VoiceOver/TalkBack, WCAG 2.1 AA. 📋</li>
+</ul>
+<hr>
+<h2>3. Problèmes corrigés &amp; fiabilité</h2>
+<table><thead><tr><th>Problème (apps du marché / prototype)</th><th>Réponse de Novaé</th><th>État</th></tr></thead><tbody>
+<tr><td>Déformation « ovale » du ciel</td><td>Projection stéréographique sphérique</td><td>✅</td></tr>
+<tr><td>Le ciel ne suit pas le téléphone / écran qui « glisse »</td><td>Suivi 60 fps lissé + positions en cache</td><td>✅</td></tr>
+<tr><td>Sens inversé en mouvement (lever = descendre)</td><td>Hauteur basée sur la gravité</td><td>✅</td></tr>
+<tr><td>Il faut recalibrer dès qu'on bouge/incline</td><td>Azimut par matrice de rotation (dos appareil) → stable à toute inclinaison</td><td>✅</td></tr>
+<tr><td>Boussole qui tremble / tourne toute seule</td><td>Un seul capteur utilisé (absolu prioritaire)</td><td>✅</td></tr>
+<tr><td>Calibrage boussole décalé</td><td>Réglage manuel par glissement + « Recalibrer »</td><td>✅</td></tr>
+<tr><td>Saccades (canvas réalloué 60×/s)</td><td>Canvas redimensionné seulement si la taille change</td><td>✅</td></tr>
+<tr><td>Compte à rebours des événements figé</td><td>Vraie date du jour + libellé « Passé »</td><td>✅</td></tr>
+<tr><td>Étiquettes impossibles à désactiver</td><td>Tous les calques avec interrupteur clair</td><td>✅</td></tr>
+<tr><td>Hémisphère sud bâclé</td><td>Nord et sud traités à égalité</td><td>✅</td></tr>
+<tr><td>Publicités intrusives</td><td>Aucune publicité, même en base</td><td>✅</td></tr>
+<tr><td>Re-rendu à chaque frame (perf)</td><td>Horloge écrite hors React ; redessin à la demande</td><td>✅</td></tr>
+<tr><td>Planètes externes coupées</td><td>Échelle radiale recalculée pour tout afficher</td><td>✅</td></tr>
+<tr><td>Lune/planètes au mauvais endroit</td><td>VSOP87 + précession/nutation, tests éphémérides</td><td>🟡 (simplifié)</td></tr>
+<tr><td>Mauvaise langue après réinstallation</td><td>Préférence indépendante de la locale</td><td>📋</td></tr>
+<tr><td>Pas de synchronisation multi-appareils</td><td>Réglages/biblio synchronisés</td><td>📋</td></tr>
+</tbody></table>
+<hr>
+<h2>4. Avantages concurrentiels</h2>
+<p>Comparatif direct (✓ présent · ✗ absent) :</p>
+<table><thead><tr><th>Fonctionnalité</th><th>Stellarium</th><th>Star Walk 2</th><th>SkySafari</th><th>Novaé</th></tr></thead><tbody>
+<tr><td>Filtre supernovæ &amp; instables</td><td>✗</td><td>✗</td><td>✗</td><td>✓ <strong>Exclusif</strong></td></tr>
+<tr><td>Satellites &amp; ISS temps réel</td><td>Partiel</td><td>✗</td><td>Partiel</td><td>✓ 8 000+ (prévu)</td></tr>
+<tr><td>Suivi par mouvement</td><td>Partiel</td><td>✓</td><td>✓</td><td>✓ Stabilisé</td></tr>
+<tr><td>Planètes photoréalistes en rotation</td><td>Basique</td><td>Stylisé</td><td>✓</td><td>✓ NASA/JPL</td></tr>
+<tr><td>Frise réversible jusqu'au Big Bang</td><td>✗</td><td>Limitée</td><td>✗</td><td>✓ 13,8 Md a. (prévu)</td></tr>
+<tr><td>Trous noirs représentés</td><td>✗</td><td>✗</td><td>Basique</td><td>✓ (prévu)</td></tr>
+<tr><td>Hémisphère sud complet</td><td>Partiel</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>Pollution lumineuse intégrée</td><td>✗</td><td>✗</td><td>Panneau</td><td>✓ Intégrée</td></tr>
+<tr><td>Sans publicités (base)</td><td>✓</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>iOS &amp; Android (web)</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+</tbody></table>
+<hr>
+<h2>5. Pourquoi les étoiles vieillissent et explosent</h2>
+<p>*Contenu pédagogique associé au filtre Supernovæ. Résumé en langage clair du</p>
+<p>consensus scientifique sur la mort des étoiles massives.*</p>
+<h3>5.1 Une étoile, un équilibre</h3>
+<p>Une étoile vit en équilibre entre la <strong>gravité</strong> (qui comprime) et la **pression de</p>
+<p>la fusion nucléaire** (qui pousse vers l'extérieur). Tant que le cœur fusionne</p>
+<p>l'hydrogène en hélium, l'étoile reste stable — et brille.</p>
+<h3>5.2 De l'hydrogène au fer</h3>
+<p>Les étoiles massives (≥ 8 masses solaires) brûlent vite et chaud. À l'épuisement</p>
+<p>d'un combustible, le cœur se contracte, chauffe et fusionne l'élément suivant :</p>
+<p>hélium → carbone → néon → oxygène → silicium. Chaque phase est plus brève (le</p>
+<p>silicium ne dure que quelques jours). L'étoile prend une structure « en pelure</p>
+<p>d'oignon ». <strong>La fusion s'arrête au fer</strong> : au-delà, fusionner consomme de l'énergie</p>
+<p>au lieu d'en libérer. Le cœur n'a plus de carburant.</p>
+<h3>5.3 L'effondrement, en moins d'une seconde</h3>
+<p>Le cœur de fer n'est plus retenu que par la pression de dégénérescence des électrons.</p>
+<p>Au-delà de la <strong>limite de Chandrasekhar (~1,4 M☉)</strong>, elle cède. Capture d'électrons</p>
+<p>et photodissociation accélèrent la chute : le cœur passe de quelques milliers de km à</p>
+<p>une dizaine de km en une fraction de seconde.</p>
+<h3>5.4 Le rebond et l'explosion</h3>
+<p>À la densité d'un noyau atomique, la pression des neutrons stoppe la chute : le cœur</p>
+<p>rebondit et lance une onde de choc. L'énergie colossale, évacuée en <strong>neutrinos</strong>, en</p>
+<p>réabsorbe une fraction qui relance l'onde (aidée par la convection). Les couches</p>
+<p>externes sont disloquées : <strong>c'est la supernova</strong>, capable de briller plus que toute</p>
+<p>sa galaxie. Les neutrinos de SN 1987A (1987) ont confirmé ce scénario.</p>
+<h3>5.5 Ce qu'il reste</h3>
+<p>Au centre : une <strong>étoile à neutrons</strong> (~8–25 M☉, parfois un pulsar) ou un **trou</p>
+<p>noir** (étoiles plus massives). Les éléments forgés et dispersés enrichissent le gaz</p>
+<p>interstellaire d'où naissent étoiles, planètes — et la vie. *L'oxygène que nous</p>
+<p>respirons, le fer de notre sang viennent d'étoiles disparues* : c'est ce que le mode</p>
+<p>« ciel du passé » veut faire ressentir.</p>
+<h3>5.6 Le cas des supernovæ de type Ia</h3>
+<p>Une <strong>naine blanche</strong> accumule de la matière jusqu'à la limite de Chandrasekhar, puis</p>
+<p>est détruite par une explosion thermonucléaire — sans étoile à neutrons. Leur</p>
+<p>luminosité régulière en fait des « chandelles standard » pour mesurer les distances.</p>
+<p><strong>Sources :</strong> Burrows &amp; Thompson ; Janka et al. ; Heger, Woosley &amp; Weaver (2002) ;</p>
+<p>Ott ; Baade &amp; Zwicky (1934) ; Colgate &amp; White (1966) ; neutrinos de SN 1987A ;</p>
+<p>première image d'un trou noir (M87*, EHT, 2019).</p>
+<hr>
+<h2>6. Spécifications techniques</h2>
+<h3>6.1 Sources de données</h3>
+<table><thead><tr><th>Source</th><th>Usage</th><th>Dans le prototype</th></tr></thead><tbody>
+<tr><td>Gaia DR3</td><td>Catalogue principal (1,8 Md étoiles)</td><td>— (cible)</td></tr>
+<tr><td>Hipparcos / Tycho-2</td><td>Étoiles brillantes (offline)</td><td>via d3-celestial (~5 000) ✅</td></tr>
+<tr><td>d3-celestial (GeoJSON)</td><td>Étoiles + 88 constellations FR</td><td>✅ chargé via jsDelivr</td></tr>
+<tr><td>threex.planets</td><td>Textures planètes équirectangulaires</td><td>✅ chargé via jsDelivr</td></tr>
+<tr><td>VSOP87</td><td>Éphémérides planétaires</td><td>🟡 version simplifiée</td></tr>
+<tr><td>SOFA</td><td>Transformations de coordonnées</td><td>📋</td></tr>
+<tr><td>Hubble / JWST</td><td>Images nébuleuses &amp; galaxies</td><td>📋</td></tr>
+<tr><td>TLE / NORAD (SGP4)</td><td>Orbites satellites</td><td>📋</td></tr>
+<tr><td>NASA Horizons API</td><td>Position ISS temps réel</td><td>📋</td></tr>
+<tr><td>NOAA / VIIRS</td><td>Pollution lumineuse satellite</td><td>📋 (Bortle simulé ✅)</td></tr>
+<tr><td>NOAA SWPC</td><td>Activité solaire / indice Kp</td><td>📋</td></tr>
+</tbody></table>
+<h3>6.2 Précision des calculs (cible)</h3>
+<table><thead><tr><th>Calcul</th><th>Méthode</th><th>Précision</th></tr></thead><tbody>
+<tr><td>Positions stellaires</td><td>Gaia DR3 + mouvement propre</td><td>&lt; 0,1 arcseconde</td></tr>
+<tr><td>Éphémérides planétaires</td><td>VSOP87</td><td>&lt; 1 arcsec sur 2000 ans</td></tr>
+<tr><td>Précession / nutation</td><td>IAU 2006/2000B</td><td>milliarcseconde</td></tr>
+<tr><td>Satellites</td><td>SGP4 (TLE)</td><td>quelques km</td></tr>
+<tr><td>Réfraction</td><td>Modèle Bennett (1982)</td><td>&lt; 0,1 arcminute</td></tr>
+</tbody></table>
+<h3>6.3 Stack du prototype</h3>
+<table><thead><tr><th>Élément</th><th>Détail</th></tr></thead><tbody>
+<tr><td>Framework</td><td>React 18 (UMD via CDN), <code>React.createElement</code> (sans build)</td></tr>
+<tr><td>Rendu</td><td>Canvas 2D ; projection stéréographique (ciel)</td></tr>
+<tr><td>Mouvement</td><td>API DeviceOrientation</td></tr>
+<tr><td>Serveurs locaux</td><td>Ruby WEBrick — HTTP (8000) et HTTPS (8443)</td></tr>
+</tbody></table>
+<h3>6.4 Plateformes &amp; hors-ligne</h3>
+<table><thead><tr><th>Plateforme</th><th>Minimum</th><th>Hors-ligne</th></tr></thead><tbody>
+<tr><td>Web</td><td>Chrome 108+ · Safari 16+ · Firefox 110+</td><td>Ciel réduit intégré ✅</td></tr>
+<tr><td>iOS (cible)</td><td>iOS 16 — iPhone 11+</td><td>carte + capteurs</td></tr>
+<tr><td>Android (cible)</td><td>Android 11 (API 30)</td><td>carte + capteurs</td></tr>
+</tbody></table>
+<p>Réseau requis (prototype) : 1ᵉʳ chargement (React, catalogue, textures).</p>
+<hr>
+<h2>7. Lancer le prototype</h2>
+<p><strong>Sur le Mac :</strong> ouvrir <code>index.html</code>, ou double-cliquer <code>start.command</code></p>
+<p>→ http://localhost:8000</p>
+<p><strong>Sur téléphone (mode mouvement) :</strong> double-cliquer <code>start-https.command</code>, puis</p>
+<p>ouvrir <code>https://&lt;ip-du-mac&gt;:8443</code> (même Wi-Fi, accepter le certificat auto-signé).</p>
+<hr>
+<h2>8. Structure du projet</h2>
+<pre><code>
+index.html            point d'entrée + scripts CDN
+styles.css            thème spatial + mode nuit
+js/data.js            catalogue, planètes, supernovæ/hypernovæ, Bortle, événements, math
+js/planetRender.js    rendu des planètes (procédural + textures réelles)
+js/SkyMap.js          carte du ciel (projection, zoom, mouvement, filtres)
+js/PlanetTracker.js   onglet planètes (orbites, lunes, gros plan animé)
+js/LightPollution.js  échelle de Bortle
+js/Events.js          événements &amp; alertes
+js/App.js             coquille (onglets, en-tête, mode nuit)
+js/main.js            montage React
+serve_https.rb        serveur HTTPS (mode mouvement mobile)
+</code></pre>
+<hr>
+<h2>9. État d'implémentation &amp; limites</h2>
+<p><strong>Implémenté ✅ :</strong> carte du ciel sphérique, catalogue réel (~5 000 étoiles, 88</p>
+<p>constellations FR), zoom fluide (molette/pincement/clic), mode mouvement,</p>
+<p>planètes texturées + lunes + gros plan animé, filtre supernovæ/hypernovæ/instables,</p>
+<p>pollution lumineuse (Bortle), événements, mode nuit.</p>
+<p><strong>Limites honnêtes :</strong></p>
+<ul>
+<li>Textures planètes <strong>1k–2k</strong> (montée 4K possible) ; repli procédural au chargement.</li>
+<li>Positions planétaires en <strong>orbites circulaires simplifiées</strong> (mouvement crédible, non identique au ciel réel du jour).</li>
+<li>Carte du ciel sans rotation lieu/heure (pas d'horizon local pour l'instant).</li>
+<li>Mode mouvement = correspondance orientation→ciel <strong>approximative</strong> (pas de calcul azimut/altitude GPS+heure complet).</li>
+<li>Supernovæ/hypernovæ : sélection emblématique, pas un catalogue exhaustif.</li>
+</ul>
+<p><strong>Non implémenté 📋 :</strong> satellites/ISS, ciel profond &amp; trous noirs, frise cosmique</p>
+<p>jusqu'au Big Bang, fil d'actualités temps réel, bibliothèque personnelle, multilingue</p>
+<p>complet &amp; accessibilité avancée.</p>
+<hr>
+<h2>10. Roadmap</h2>
+<p><strong>v2.0 — Édition immersive (état actuel du prototype)</strong></p>
+<ul>
+<li>✅ Ciel sphérique + catalogue réel + zoom fluide</li>
+<li>✅ Planètes photoréalistes cliquables + lunes</li>
+<li>✅ Filtre supernovæ / hypernovæ / étoiles instables</li>
+<li>✅ Mode mouvement (capteurs) + mode nuit + pollution lumineuse</li>
+<li>🟡 Suivi mouvement (fusion/calibration à compléter)</li>
+</ul>
+<p><strong>v2.5 — Profondeur</strong></p>
+<ul>
+<li>Satellites &amp; ISS temps réel (TLE/SGP4), superposition AR</li>
+<li>Frise cosmique jusqu'au Big Bang ; trous noirs (Sgr A<em>, M87</em>)</li>
+<li>Catalogue NGC/IC + données JWST ; textures 4K ; horizon local (lieu/heure)</li>
+</ul>
+<p><strong>v3.0 — Communauté</strong></p>
+<ul>
+<li>Fil d'actualités &amp; notifications temps réel ; bibliothèque personnelle synchronisée</li>
+<li>Multilingue 50+ &amp; accessibilité WCAG ; narrations audio</li>
+<li>Sessions d'observation partagées ; tableau de bord web</li>
+</ul>
+<hr>
+<p><em>NOVAÉ — Documentation des fonctionnalités · Version 2.0 · Juin 2026</em></p></body></html>
