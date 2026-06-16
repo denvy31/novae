@@ -29,19 +29,20 @@ function LibraryPanel() {
     return () => window.removeEventListener("novae-captures", on);
   }, []);
 
-  const fmt = (iso) => { try { return new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso; } };
+  const I18N = window.NV_I18N;
+  const fmt = (iso) => { try { return new Date(iso).toLocaleString(I18N.locale(), { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return iso; } };
 
   if (!items.length) {
     return React.createElement("div", { className: "library-empty" },
       React.createElement("div", { className: "lib-empty-icon" }, "📷"),
-      React.createElement("h3", null, "Bibliothèque vide"),
-      React.createElement("p", null, "Dans l'onglet Ciel, touchez « 📸 Capturer » pour enregistrer une vue du ciel avec sa date, son lieu et ses coordonnées."));
+      React.createElement("h3", null, I18N.t("lib_empty_title")),
+      React.createElement("p", null, I18N.t("lib_empty_desc")));
   }
 
   return React.createElement("div", { className: "library-wrap" },
     React.createElement("div", { className: "library-head" },
-      React.createElement("span", null, items.length + " capture" + (items.length > 1 ? "s" : "")),
-      React.createElement("button", { className: "lib-clear", onClick: () => { if (confirm("Tout supprimer ?")) window.NVLibrary.clear(); } }, "Tout effacer")),
+      React.createElement("span", null, items.length + " 📷"),
+      React.createElement("button", { className: "lib-clear", onClick: () => { if (confirm(I18N.t("lib_clear_confirm"))) window.NVLibrary.clear(); } }, I18N.t("lib_clear"))),
     React.createElement("div", { className: "library-grid" },
       items.map((c) => React.createElement("div", { key: c.id, className: "lib-card" },
         React.createElement("img", { src: c.img, alt: "capture", onClick: () => setView(c) }),

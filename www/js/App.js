@@ -1,7 +1,6 @@
 /* Novaé — App shell */
 function App() {
   const { useState, useEffect } = React;
-  const NV = window.NV;
   const I18N = window.NV_I18N;
   const tr = (k) => I18N.t(k);
   const [tab, setTab] = useState("sky");
@@ -17,10 +16,21 @@ function App() {
     return () => clearInterval(id);
   }, []);
 
-  const chooseLang = (code) => { I18N.setLang(code); setLangState(code); setLangOpen(false); };
+  const chooseLang = (code) => {
+    I18N.setLang(code);
+    setLangState(code);
+    setLangOpen(false);
+  };
   const loc = I18N.locale();
-  const dateLabel = now.toLocaleDateString(loc, { weekday: "short", day: "numeric", month: "short" });
-  const timeLabel = now.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
+  const dateLabel = now.toLocaleDateString(loc, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  const timeLabel = now.toLocaleTimeString(loc, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   const tabs = [
     { id: "sky", icon: "🌌", label: tr("tab_sky") },
@@ -38,90 +48,143 @@ function App() {
     library: [tr("title_library"), tr("sub_library")],
   };
 
-  return React.createElement("div", { className: "app" + (night ? " night" : "") },
-    React.createElement("header", { className: "topbar" },
-      React.createElement("div", { className: "brand" },
+  return React.createElement(
+    "div",
+    { className: "app" + (night ? " night" : "") },
+    React.createElement(
+      "header",
+      { className: "topbar" },
+      React.createElement(
+        "div",
+        { className: "brand" },
         React.createElement("span", { className: "logo" }, "✦"),
         React.createElement("span", { className: "brand-name" }, "NOVAÉ"),
-        React.createElement("span", { className: "brand-sub" }, "v2.0")
+        React.createElement("span", { className: "brand-sub" }, "v2.0"),
       ),
-      React.createElement("div", { className: "header-titles" },
+      React.createElement(
+        "div",
+        { className: "header-titles" },
         React.createElement("h1", null, titles[tab][0]),
-        React.createElement("p", null, titles[tab][1])
+        React.createElement("p", null, titles[tab][1]),
       ),
-      React.createElement("div", { className: "tonight-chip", title: tr("title_sky") },
+      React.createElement(
+        "div",
+        { className: "tonight-chip", title: tr("title_sky") },
         React.createElement("span", { className: "tonight-day" }, dateLabel),
-        React.createElement("span", { className: "tonight-time" }, timeLabel)
+        React.createElement("span", { className: "tonight-time" }, timeLabel),
       ),
       // Sélecteur de langue
-      React.createElement("div", { className: "lang-wrap" },
-        React.createElement("button", {
-          className: "lang-btn" + (langOpen ? " on" : ""),
-          onClick: () => setLangOpen(!langOpen),
-          title: tr("lang_label"),
-          "aria-label": tr("lang_label"),
-        }, React.createElement("span", { className: "lang-flag" }, I18N.meta().flag),
-           React.createElement("span", { className: "lang-code" }, lang.toUpperCase())),
-        langOpen && React.createElement(React.Fragment, null,
-          React.createElement("div", { className: "lang-backdrop", onClick: () => setLangOpen(false) }),
-          React.createElement("div", { className: "lang-menu" },
-            I18N.langs.map((l) =>
-              React.createElement("button", {
-                key: l.code, className: "lang-item" + (l.code === lang ? " active" : ""),
-                onClick: () => chooseLang(l.code),
-              },
-                React.createElement("span", { className: "lang-flag" }, l.flag),
-                React.createElement("span", null, l.name),
-                l.code === lang && React.createElement("span", { className: "lang-check" }, "✓")
-              ))
-          ))
+      React.createElement(
+        "div",
+        { className: "lang-wrap" },
+        React.createElement(
+          "button",
+          {
+            className: "lang-btn" + (langOpen ? " on" : ""),
+            onClick: () => setLangOpen(!langOpen),
+            title: tr("lang_label"),
+            "aria-label": tr("lang_label"),
+          },
+          React.createElement(
+            "span",
+            { className: "lang-flag" },
+            I18N.meta().flag,
+          ),
+          React.createElement(
+            "span",
+            { className: "lang-code" },
+            lang.toUpperCase(),
+          ),
+        ),
+        langOpen &&
+          React.createElement(
+            React.Fragment,
+            null,
+            React.createElement("div", {
+              className: "lang-backdrop",
+              onClick: () => setLangOpen(false),
+            }),
+            React.createElement(
+              "div",
+              { className: "lang-menu" },
+              I18N.langs.map((l) =>
+                React.createElement(
+                  "button",
+                  {
+                    key: l.code,
+                    className: "lang-item" + (l.code === lang ? " active" : ""),
+                    onClick: () => chooseLang(l.code),
+                  },
+                  React.createElement(
+                    "span",
+                    { className: "lang-flag" },
+                    l.flag,
+                  ),
+                  React.createElement("span", null, l.name),
+                  l.code === lang &&
+                    React.createElement(
+                      "span",
+                      { className: "lang-check" },
+                      "✓",
+                    ),
+                ),
+              ),
+            ),
+          ),
       ),
-      React.createElement("button", {
-        className: "night-toggle" + (night ? " on" : ""),
-        onClick: () => setNight(!night),
-        title: tr("night"),
-      },
-        React.createElement("span", { className: "nt-icon" }, night ? "🔴" : "🌙"),
-        React.createElement("span", { className: "nt-label" }, tr("night"))
-      )
+      React.createElement(
+        "button",
+        {
+          className: "night-toggle" + (night ? " on" : ""),
+          onClick: () => setNight(!night),
+          title: tr("night"),
+        },
+        React.createElement(
+          "span",
+          { className: "nt-icon" },
+          night ? "🔴" : "🌙",
+        ),
+        React.createElement("span", { className: "nt-label" }, tr("night")),
+      ),
     ),
 
-    React.createElement("div", { className: "stats-strip" },
-      stat(NV.stats.stars, tr("st_stars")),
-      stat(NV.stats.planets, tr("st_planets")),
-      stat(NV.stats.supernovae, tr("st_supernovae")),
-      stat(NV.stats.deepSky, tr("st_deepSky")),
-      stat(NV.stats.cultures, tr("st_cultures")),
-      stat(NV.stats.languages, tr("st_languages"))
-    ),
-
-    React.createElement("main", { className: "content" },
-      tab === "sky" && React.createElement(React.Fragment, null,
-        React.createElement(sky3d ? SkyMap3D : SkyMap, { key: sky3d ? "3d" : "2d" }),
-        React.createElement("button", { className: "mode3d-toggle", onClick: () => setSky3d(!sky3d) }, sky3d ? tr("view2d") : tr("view3d"))
-      ),
+    React.createElement(
+      "main",
+      { className: "content" },
+      tab === "sky" &&
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(sky3d ? SkyMap3D : SkyMap, {
+            key: sky3d ? "3d" : "2d",
+          }),
+          React.createElement(
+            "button",
+            { className: "mode3d-toggle", onClick: () => setSky3d(!sky3d) },
+            sky3d ? tr("view2d") : tr("view3d"),
+          ),
+        ),
       tab === "planets" && React.createElement(PlanetTracker, { lang }),
       tab === "bortle" && React.createElement(LightPollution),
       tab === "events" && React.createElement(EventsPanel),
-      tab === "library" && React.createElement(LibraryPanel)
+      tab === "library" && React.createElement(LibraryPanel),
     ),
 
-    React.createElement("nav", { className: "bottom-nav" },
+    React.createElement(
+      "nav",
+      { className: "bottom-nav" },
       tabs.map((tb) =>
-        React.createElement("button", {
-          key: tb.id, className: "nav-btn" + (tab === tb.id ? " active" : ""),
-          onClick: () => setTab(tb.id),
-        },
+        React.createElement(
+          "button",
+          {
+            key: tb.id,
+            className: "nav-btn" + (tab === tb.id ? " active" : ""),
+            onClick: () => setTab(tb.id),
+          },
           React.createElement("span", { className: "nav-icon" }, tb.icon),
-          React.createElement("span", { className: "nav-label" }, tb.label)
-        ))
-    )
+          React.createElement("span", { className: "nav-label" }, tb.label),
+        ),
+      ),
+    ),
   );
-
-  function stat(value, label) {
-    return React.createElement("div", { className: "stat", key: label },
-      React.createElement("div", { className: "stat-val" }, value),
-      React.createElement("div", { className: "stat-label" }, label)
-    );
-  }
 }

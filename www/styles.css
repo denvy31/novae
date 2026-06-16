@@ -28,7 +28,7 @@
   --warn: #ff9d3c;
   --good: #46e0a0;
 
-  --glow: 0 0 18px rgba(88, 200, 255, 0.55);
+  --glow: 0 0 14px rgba(88, 200, 255, 0.38);
   --radius: 18px;
   --shadow: 0 18px 55px rgba(0, 0, 0, 0.6);
 }
@@ -55,11 +55,11 @@ body {
   isolation: isolate;
   background:
     /* lueur d'atmosphère au ras de l'horizon (signature Sky Tonight) */
-    radial-gradient(140% 42% at 50% 118%, rgba(70, 120, 230, 0.30) 0%, rgba(40, 70, 160, 0.10) 38%, transparent 66%),
+    radial-gradient(140% 42% at 50% 118%, rgba(70, 120, 230, 0.22) 0%, rgba(40, 70, 160, 0.08) 38%, transparent 66%),
     /* nébuleuse violette en haut à droite */
-    radial-gradient(1100px 620px at 82% -12%, rgba(150, 95, 230, 0.22), transparent 70%),
+    radial-gradient(1100px 620px at 82% -12%, rgba(150, 95, 230, 0.15), transparent 70%),
     /* nébuleuse cyan en bas à gauche */
-    radial-gradient(900px 560px at 8% 108%, rgba(60, 150, 230, 0.18), transparent 72%),
+    radial-gradient(900px 560px at 8% 108%, rgba(60, 150, 230, 0.12), transparent 72%),
     /* dégradé vertical zénith → horizon */
     linear-gradient(180deg, var(--sky-high) 0%, var(--bg-2) 55%, var(--sky-low) 100%);
 }
@@ -71,7 +71,7 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.5;
   background-image:
     radial-gradient(1.4px 1.4px at 18% 24%, rgba(255,255,255,0.9), transparent),
     radial-gradient(1.2px 1.2px at 67% 14%, rgba(200,225,255,0.8), transparent),
@@ -88,7 +88,15 @@ body {
     400px 400px, 360px 360px, 280px 280px, 440px 440px, 320px 320px;
   animation: twinkle 7s ease-in-out infinite alternate;
 }
-@keyframes twinkle { from { opacity: 0.45; } to { opacity: 0.8; } }
+@keyframes twinkle { from { opacity: 0.32; } to { opacity: 0.6; } }
+
+/* Accessibilité : respecter « réduire les animations » (iOS/Android/macOS) */
+@media (prefers-reduced-motion: reduce) {
+  .app::before { animation: none; opacity: 0.4; }
+  .logo { animation: none; }
+  .info-card, .lang-menu, .layer-panel, .search-results { animation: none; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
 
 /* ---------- Mode nuit (rouge) ---------- */
 .app.night { filter: hue-rotate(-28deg) saturate(0.42) brightness(0.72) sepia(0.4); }
@@ -227,10 +235,46 @@ body {
 /* Barre d'outils (calques) */
 .sky-toolbar {
   position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 8px;
-  flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; z-index: 30;
+  flex-wrap: wrap; align-items: flex-start; z-index: 30;
 }
-.sky-toolbar::-webkit-scrollbar { display: none; }
 .sky-toolbar .chip { flex: 0 0 auto; white-space: nowrap; }
+.tools-btn { font-weight: 600; }
+
+/* Recherche d'objets */
+.sky-search { position: relative; flex: 1 1 200px; max-width: 300px; min-width: 150px; }
+.search-input {
+  width: 100%; padding: 8px 13px; border-radius: 999px;
+  background: var(--panel-strong); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  outline: none; transition: 0.15s;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+.search-results {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40;
+  background: var(--panel-strong); border: 1px solid var(--border-bright); border-radius: 14px;
+  padding: 5px; box-shadow: var(--shadow); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  max-height: 320px; overflow-y: auto; animation: cardIn 0.16s ease;
+}
+.search-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: none; color: var(--text); cursor: pointer;
+  padding: 9px 11px; border-radius: 10px; font-size: 13.5px; text-align: left;
+}
+.search-item:hover { background: rgba(88,200,255,0.14); }
+.search-ico { width: 18px; text-align: center; color: var(--accent); }
+.search-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Panneau de calques repliable (épuré : masqué par défaut) */
+.layer-panel {
+  position: absolute; top: 52px; left: 12px; z-index: 36;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  max-width: min(440px, calc(100% - 24px));
+  background: var(--panel-strong); border: 1px solid var(--border-bright); border-radius: 16px;
+  padding: 12px; backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: var(--shadow); animation: cardIn 0.18s ease;
+}
+.layer-panel .chip { flex: 0 0 auto; }
 
 /* Lieu + horloge */
 .sky-status-bar {
@@ -364,6 +408,24 @@ body {
   margin-top: 12px; font-size: 12.5px; color: #c2cdee; line-height: 1.5;
   background: rgba(88,200,255,0.08); padding: 10px; border-radius: 12px;
 }
+
+/* Section « ce soir » : courbe d'altitude */
+.tonight-box {
+  margin-top: 14px; padding: 12px; border-radius: 14px;
+  background: rgba(10,16,36,0.6); border: 1px solid var(--border);
+}
+.tonight-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; font-weight: 600; margin-bottom: 8px;
+}
+.tonight-vis { font-size: 11px; font-weight: 600; color: var(--muted); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); }
+.tonight-vis.up { color: #9af0c0; border-color: rgba(70,224,160,0.45); background: rgba(70,224,160,0.12); }
+.alt-curve { width: 100%; height: 84px; display: block; border-radius: 10px; }
+.tonight-row {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px;
+  font-size: 11.5px; color: var(--muted);
+}
+.tonight-row strong { color: #d4ecff; font-weight: 700; }
 
 /* ============================================================
    GRILLE PANNEAU (planètes / pollution)

@@ -15,15 +15,16 @@
   <meta name="apple-mobile-web-app-title" content="Novaé" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+  <!-- Bibliothèques cœur rapatriées en local → 1er chargement hors-ligne, pas de dépendance CDN -->
   <!-- React (no build step) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="lib/react.production.min.js"></script>
+  <script src="lib/react-dom.production.min.js"></script>
   <!-- Real astronomy: ephemerides (planets/Sun/Moon), alt-az, sidereal time -->
-  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine/astronomy.browser.min.js"></script>
+  <script src="lib/astronomy.browser.min.js"></script>
   <!-- Satellites: SGP4 propagation -->
-  <script src="https://cdn.jsdelivr.net/npm/satellite.js/dist/satellite.min.js"></script>
+  <script src="lib/satellite.min.js"></script>
   <!-- 3D sky (WebGL) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="lib/three.min.js"></script>
 </head>
 <body>
   <div id="root"></div>

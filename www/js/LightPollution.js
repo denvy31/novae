@@ -2,6 +2,7 @@
 function LightPollution() {
   const { useState, useRef, useEffect } = React;
   const NV = window.NV;
+  const I18N = window.NV_I18N;
   const [level, setLevel] = useState(4);
   const canvasRef = useRef(null);
   const info = NV.bortle[level - 1];
@@ -77,7 +78,7 @@ function LightPollution() {
       React.createElement("div", { className: "bortle-overlay" },
         React.createElement("div", { className: "bortle-num" }, "Bortle " + level),
         React.createElement("div", { className: "bortle-name" }, info.label),
-        React.createElement("div", { className: "bortle-stars" }, "⭐ " + info.stars + " étoiles visibles")
+        React.createElement("div", { className: "bortle-stars" }, "⭐ " + info.stars + " " + I18N.t("lp_stars_visible"))
       ),
       React.createElement("div", { className: "bortle-slider" },
         React.createElement("input", {
@@ -96,20 +97,19 @@ function LightPollution() {
     ),
 
     React.createElement("aside", { className: "bortle-info" },
-      React.createElement("h3", null, "Qualité du ciel"),
+      React.createElement("h3", null, I18N.t("lp_quality")),
       React.createElement("p", { className: "info-note" }, info.desc),
       level < 4
-        ? React.createElement("div", { className: "ideal-badge ok" }, "✅ Conditions idéales pour l'observation")
-        : React.createElement("div", { className: "ideal-badge warn" }, "⚠ Pollution lumineuse — déplacez-vous"),
-      React.createElement("h4", null, "Meilleurs sites à proximité"),
+        ? React.createElement("div", { className: "ideal-badge ok" }, "✅ " + I18N.t("lp_ideal"))
+        : React.createElement("div", { className: "ideal-badge warn" }, "⚠ " + I18N.t("lp_polluted")),
+      React.createElement("h4", null, I18N.t("lp_sites")),
       React.createElement("ul", { className: "site-list" },
         NV.sites.map((s) =>
           React.createElement("li", { key: s.name },
             React.createElement("span", { className: "site-name" }, s.name),
             React.createElement("span", { className: "site-meta" }, "Bortle " + s.bortle + " · " + s.dist + " km")
           ))
-      ),
-      React.createElement("p", { className: "hint" }, "Données NOAA/VIIRS — résolution 500 m/pixel.")
+      )
     )
   );
 

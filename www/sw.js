@@ -1,7 +1,9 @@
 /* Novaé — service worker (installable + offline app shell) */
-const CACHE = "novae-v17";
+const CACHE = "novae-v19";
 const SHELL = [
   "./", "index.html", "styles.css",
+  "lib/react.production.min.js", "lib/react-dom.production.min.js",
+  "lib/astronomy.browser.min.js", "lib/satellite.min.js", "lib/three.min.js",
   "js/i18n.js", "js/data.js", "js/deepsky.js", "js/astro.js", "js/planetRender.js",
   "js/SkyMap.js", "js/SkyMap3D.js", "js/PlanetTracker.js", "js/LightPollution.js", "js/Events.js",
   "js/Library.js", "js/App.js", "js/main.js",

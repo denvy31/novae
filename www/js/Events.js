@@ -2,6 +2,7 @@
 function EventsPanel() {
   const { useState } = React;
   const NV = window.NV;
+  const I18N = window.NV_I18N;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [filter, setFilter] = useState("Tous");
 
@@ -21,7 +22,7 @@ function EventsPanel() {
         React.createElement("button", {
           key: t, className: "chip" + (filter === t ? " on" : ""),
           onClick: () => setFilter(t),
-        }, t))
+        }, t === "Tous" ? I18N.t("ev_all") : t))
     ),
 
     React.createElement("div", { className: "events-list" },
@@ -32,24 +33,21 @@ function EventsPanel() {
             React.createElement("div", { className: "event-top" },
               React.createElement("span", { className: "event-type" }, e.type),
               React.createElement("span", { className: "event-date" },
-                e.d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }))
+                e.d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" }))
             ),
             React.createElement("h4", null, e.title),
             React.createElement("p", null, e.desc)
           ),
           React.createElement("div", { className: "event-countdown" },
             e.days < 0
-              ? React.createElement("span", { className: "past" }, "Passé")
+              ? React.createElement("span", { className: "past" }, I18N.t("ev_past"))
               : e.days === 0
-                ? React.createElement("span", { className: "soon" }, "Aujourd'hui")
+                ? React.createElement("span", { className: "soon" }, I18N.t("ev_today"))
                 : React.createElement(React.Fragment, null,
                     React.createElement("strong", null, "J−" + e.days),
-                    React.createElement("span", null, e.days === 1 ? "jour" : "jours"))
+                    React.createElement("span", null, e.days === 1 ? I18N.t("ev_day") : I18N.t("ev_days")))
           )
         ))
-    ),
-
-    React.createElement("p", { className: "hint center" },
-      "Calcul local via GPS · Préavis jusqu'à 30 jours · Rappels J−7 / J−1 / J−0 · Intégration calendrier iOS/Android")
+    )
   );
 }

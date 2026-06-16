@@ -51,6 +51,8 @@ function SkyMap() {
   const [reticleName, setReticleName] = useState("");
   const [lapse, setLapse] = useState(false);
   const [hud, setHud] = useState(null); // planet info panel (bottom-right, on hover/aim)
+  const [toolsOpen, setToolsOpen] = useState(false); // calques repliés par défaut (épuré)
+  const [query, setQuery] = useState(""); // recherche d'objets
 
   const FR2EN = { Mercure: "Mercury", Vénus: "Venus", Mars: "Mars", Jupiter: "Jupiter", Saturne: "Saturn", Uranus: "Uranus", Neptune: "Neptune", Pluton: "Pluto" };
 
@@ -60,6 +62,36 @@ function SkyMap() {
     NV.constellations.forEach((c) => c.stars.forEach((s) => arr.push({ name: s.name, ra: s.ra, dec: s.dec, mag: s.mag, spec: s.spec })));
     return arr;
   }, [NV]);
+
+  // Index pour la recherche d'objets (noms fixes ; planètes résolues au clic)
+  const searchIndex = useMemo(() => {
+    const idx = [], seen = new Set();
+    const add = (name, ra, dec, kind, data, planet) => { if (!name) return; const k = kind + ":" + name; if (seen.has(k)) return; seen.add(k); idx.push({ name, ra, dec, kind, data, planet }); };
+    named.forEach((s) => add(s.name, s.ra, s.dec, "star", s));
+    NV.planets.forEach((p) => add(p.name, null, null, "planet", p, true));
+    (NV.supernovae || []).forEach((d) => add(d.name, d.ra, d.dec, "sn", d));
+    (NV.hypernovae || []).forEach((d) => add(d.name, d.ra, d.dec, "hyper", d));
+    (NV.unstableStars || []).forEach((d) => add(d.name, d.ra, d.dec, "unstable", d));
+    const DS = window.NV_DEEPSKY;
+    if (DS && DS.messier) DS.messier.forEach((m) => add((m.name ? m.name + " (M" + m.m + ")" : "M" + m.m), m.ra, m.dec, "messier", m));
+    return idx;
+  }, [NV, named]);
+  const norm = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const I18N = window.NV_I18N;
+  const results = query.trim().length >= 1 ? (() => {
+    const q = norm(query);
+    return searchIndex.filter((r) => norm(r.name).includes(q) || (r.planet && I18N && norm(I18N.planet(r.data.name)).includes(q))).slice(0, 8);
+  })() : [];
+  const goToResult = (r) => {
+    setQuery("");
+    if (r.planet) {
+      const f = frame.current, b = f && f.bodies.find((x) => x.pl.name === r.data.name);
+      if (b) { setSelected({ kind: "planet", data: r.data, ra: b.ra, dec: b.dec }); zoomToRaDec(b.ra, b.dec, initScale.current * 12); }
+      return;
+    }
+    setSelected({ kind: r.kind, data: r.data, ra: r.ra, dec: r.dec });
+    zoomToRaDec(r.ra, r.dec, initScale.current * 8);
+  };
 
   // dense faint starfield (astrophoto look), uniform on the sphere
   const dust = useMemo(() => {
@@ -520,16 +552,37 @@ function SkyMap() {
     React.createElement("div", { ref: hoverRef, className: "hover-tip" }),
     React.createElement("canvas", { ref: previewRef, className: "planet-preview" }),
     React.createElement("div", { className: "sky-toolbar" },
-      chip("Constellations", showLines, () => setShowLines(!showLines)),
-      chip("Étiquettes", showLabels, () => setShowLabels(!showLabels)),
-      chip("Voie Lactée", showMilkyWay, () => setShowMilkyWay(!showMilkyWay)),
-      chip("Planètes", showPlanets, () => setShowPlanets(!showPlanets)),
-      chip("Ciel profond", showDeepSky, () => setShowDeepSky(!showDeepSky)),
-      chip("🛰 Satellites", showSats, () => setShowSats(!showSats)),
-      chip("💥 Supernovæ", snFilter, () => setSnFilter(!snFilter), " chip-sn"),
-      chip("Sous l'horizon", belowHorizon, () => setBelowHorizon(!belowHorizon)),
-      chip(motion ? "📱 Mouvement ✓" : "📱 Suivre l'appareil", motion, () => (motion ? stopMotion() : startMotion()), " chip-ar"),
-      React.createElement("button", { className: "chip", onClick: capture }, "📸 Capturer")
+      // Recherche d'objets : tape un nom → centre la carte dessus
+      React.createElement("div", { className: "sky-search" },
+        React.createElement("input", {
+          className: "search-input", type: "search", value: query,
+          placeholder: "🔍 " + I18N.t("sky_search"),
+          onChange: (e) => setQuery(e.target.value),
+          onKeyDown: (e) => { if (e.key === "Enter" && results[0]) goToResult(results[0]); if (e.key === "Escape") setQuery(""); },
+        }),
+        results.length > 0 && React.createElement("div", { className: "search-results" },
+          results.map((r) => React.createElement("button", {
+            key: r.kind + r.name, className: "search-item", onClick: () => goToResult(r),
+          },
+            React.createElement("span", { className: "search-ico" }, ({ star: "★", planet: "🪐", sn: "✕", hyper: "✸", unstable: "⚠", messier: "🌌" }[r.kind] || "✦")),
+            React.createElement("span", { className: "search-name" }, r.name)))) ),
+      // Un seul bouton « Calques » : ouvre/ferme le panneau des calques (interface épurée)
+      React.createElement("button", {
+        className: "chip tools-btn" + (toolsOpen ? " on" : ""),
+        onClick: () => setToolsOpen((o) => !o),
+      }, "⚙ " + I18N.t("sky_layers") + " " + (toolsOpen ? "▾" : "▸")),
+      chip("📱 " + (motion ? I18N.t("sky_follow_on") : I18N.t("sky_follow")), motion, () => (motion ? stopMotion() : startMotion()), " chip-ar"),
+      React.createElement("button", { className: "chip", onClick: capture, title: "Capturer" }, "📸")
+    ),
+    toolsOpen && React.createElement("div", { className: "layer-panel" },
+      chip(I18N.t("sky_constellations"), showLines, () => setShowLines(!showLines)),
+      chip(I18N.t("sky_labels"), showLabels, () => setShowLabels(!showLabels)),
+      chip(I18N.t("sky_milkyway"), showMilkyWay, () => setShowMilkyWay(!showMilkyWay)),
+      chip(I18N.t("tab_planets"), showPlanets, () => setShowPlanets(!showPlanets)),
+      chip(I18N.t("st_deepSky"), showDeepSky, () => setShowDeepSky(!showDeepSky)),
+      chip("🛰 " + I18N.t("sky_satellites"), showSats, () => setShowSats(!showSats)),
+      chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),
+      chip(I18N.t("sky_below"), belowHorizon, () => setBelowHorizon(!belowHorizon))
     ),
     React.createElement("div", { className: "sky-status-bar" },
       React.createElement("button", { className: "loc-chip", onClick: useMyLocation }, "📍 " + obs.current.lat.toFixed(2) + "°, " + obs.current.lon.toFixed(2) + "° · " + obs.current.label),
@@ -601,6 +654,7 @@ function InfoCard({ sel, obs, date, onClose }) {
   const { data, kind } = sel;
   const thumb = useRef(null);
   const AS = window.NVAstro;
+  const I18N = window.NV_I18N;
 
   useEffect(() => {
     if (!["planet", "sun", "moon"].includes(kind) || !thumb.current) return;
@@ -619,6 +673,58 @@ function InfoCard({ sel, obs, date, onClose }) {
     };
     raf = requestAnimationFrame(render); return () => cancelAnimationFrame(raf);
   }, [kind, data]);
+
+  // --- Section « ce soir » : courbe d'altitude sur 24 h (tout objet avec ra/dec) ---
+  const curveRef = useRef(null);
+  const sky = (sel.ra != null && sel.dec != null && AS) ? (() => {
+    try {
+      const pts = []; const t0 = date.getTime();
+      for (let i = 0; i <= 48; i++) {                 // pas de 30 min sur 24 h
+        const t = new Date(t0 + i * 1800000);
+        const lst = AS.lstHours(t, obs.lon);
+        const aa = AS.altaz(sel.ra, sel.dec, lst, obs.lat);
+        pts.push({ t, alt: aa.alt });
+      }
+      let top = pts[0]; pts.forEach((p) => { if (p.alt > top.alt) top = p; });
+      let rise = null, set = null;
+      for (let i = 1; i < pts.length; i++) {
+        if (pts[i - 1].alt < 0 && pts[i].alt >= 0 && !rise) rise = pts[i].t;
+        if (pts[i - 1].alt >= 0 && pts[i].alt < 0 && !set) set = pts[i].t;
+      }
+      return { pts, top, rise, set, now: pts[0].alt };
+    } catch (e) { return null; }
+  })() : null;
+
+  useEffect(() => {
+    if (!sky || !curveRef.current) return;
+    const c = curveRef.current, dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== Math.round(w * dpr)) c.width = w * dpr;
+    if (c.height !== Math.round(h * dpr)) c.height = h * dpr;
+    const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    const pad = 5;
+    const altY = (a) => { const v = Math.max(-20, Math.min(90, a)); return h - pad - ((v + 20) / 110) * (h - 2 * pad); };
+    const iX = (i) => pad + (i / (sky.pts.length - 1)) * (w - 2 * pad);
+    const y0 = altY(0);
+    ctx.fillStyle = "rgba(255,150,90,0.06)"; ctx.fillRect(pad, y0, w - 2 * pad, h - pad - y0); // sol
+    ctx.strokeStyle = "rgba(150,120,90,0.55)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(w - pad, y0); ctx.stroke(); ctx.setLineDash([]);
+    // aire sous la courbe (au-dessus de l'horizon)
+    ctx.beginPath(); ctx.moveTo(iX(0), y0);
+    sky.pts.forEach((p, i) => ctx.lineTo(iX(i), altY(Math.max(0, p.alt))));
+    ctx.lineTo(iX(sky.pts.length - 1), y0); ctx.closePath();
+    ctx.fillStyle = "rgba(88,200,255,0.16)"; ctx.fill();
+    // courbe
+    ctx.beginPath(); sky.pts.forEach((p, i) => { const x = iX(i), y = altY(p.alt); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.strokeStyle = "#58c8ff"; ctx.lineWidth = 2; ctx.stroke();
+    // culmination + « maintenant »
+    const tx = iX(sky.pts.indexOf(sky.top)), ty = altY(sky.top.alt);
+    ctx.fillStyle = "#ffce6e"; ctx.beginPath(); ctx.arc(tx, ty, 3, 0, 7); ctx.fill();
+    const nx = iX(0), ny = altY(sky.now);
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(nx, ny, 3.2, 0, 7); ctx.fill();
+  }, [sel.ra, sel.dec, obs.lat, obs.lon, date]);
+
+  const fmtT = (d) => d ? d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "—";
 
   const rows = []; let badge, badgeColor;
   const riseSetInfo = (en) => { try { const o = AS.observer(obs.lat, obs.lon, obs.elev); const r = AS.riseSet(en, date, o, +1), s = AS.riseSet(en, date, o, -1); const f = (d) => d ? d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "—"; if (r) rows.push(["Prochain lever", f(r)]); if (s) rows.push(["Prochain coucher", f(s)]); } catch (e) {} };
@@ -647,6 +753,15 @@ function InfoCard({ sel, obs, date, onClose }) {
     React.createElement("div", { className: "info-badge", style: { color: badgeColor, borderColor: badgeColor } }, badge),
     React.createElement("h3", null, data.name),
     React.createElement("table", { className: "info-table" }, React.createElement("tbody", null, rows.map(([k, val]) => React.createElement("tr", { key: k }, React.createElement("td", null, k), React.createElement("td", null, String(val)))))),
+    sky && React.createElement("div", { className: "tonight-box" },
+      React.createElement("div", { className: "tonight-head" },
+        React.createElement("span", null, "🌙 " + I18N.t("sky_tonight")),
+        React.createElement("span", { className: "tonight-vis" + (sky.now > 0 ? " up" : "") }, sky.now > 0 ? I18N.t("sky_visible") + " · " + sky.now.toFixed(0) + "°" : I18N.t("sky_below"))),
+      React.createElement("canvas", { ref: curveRef, className: "alt-curve" }),
+      React.createElement("div", { className: "tonight-row" },
+        React.createElement("span", null, I18N.t("sky_culmination") + " ", React.createElement("strong", null, fmtT(sky.top.t)), " · ", sky.top.alt.toFixed(0), "°"),
+        sky.rise && React.createElement("span", null, "↑ ", fmtT(sky.rise)),
+        sky.set && React.createElement("span", null, "↓ ", fmtT(sky.set)))),
     (data.note || data.fact) && React.createElement("p", { className: "info-note" }, data.note || data.fact)
   );
 }
