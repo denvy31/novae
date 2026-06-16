@@ -152,12 +152,21 @@
   }
 
   function drawSun(ctx, x, y, r) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    // couronne diffuse étendue
+    const corona = ctx.createRadialGradient(x, y, r * 0.7, x, y, r * 3.4);
+    corona.addColorStop(0, "rgba(255,220,130,0.55)");
+    corona.addColorStop(0.4, "rgba(255,170,60,0.18)");
+    corona.addColorStop(1, "transparent");
+    ctx.fillStyle = corona; ctx.beginPath(); ctx.arc(x, y, r * 3.4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
     const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.4);
     g.addColorStop(0, "#fff8da"); g.addColorStop(0.35, "#ffd95c");
     g.addColorStop(0.7, "rgba(255,170,60,0.5)"); g.addColorStop(1, "transparent");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.4, 0, Math.PI * 2); ctx.fill();
     const core = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
-    core.addColorStop(0, "#fff7e0"); core.addColorStop(1, "#ffb733");
+    core.addColorStop(0, "#fff7e0"); core.addColorStop(0.7, "#ffd24a"); core.addColorStop(1, "#ff9e2c");
     ctx.fillStyle = core; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
 
@@ -201,15 +210,31 @@
     }
   }
 
-  function atmoRim(ctx, x, y, R, p) {
-    const atmo = { earth: "120,180,255", venus: "240,220,160", jupiter: "232,211,160", saturn: "230,214,168", uranus: "189,238,245", neptune: "111,155,255", mars: "227,160,122" }[p.render];
+  function atmoRim(ctx, x, y, R, p, light) {
+    const atmo = { earth: "120,180,255", venus: "240,220,160", jupiter: "232,211,160", saturn: "230,214,168", uranus: "189,238,245", neptune: "111,155,255", mars: "227,160,122", pluto: "205,188,176" }[p.render];
     if (!atmo) return;
-    const ring = ctx.createRadialGradient(x, y, R * 0.92, x, y, R * 1.13);
-    ring.addColorStop(0, "rgba(0,0,0,0)");
-    ring.addColorStop(0.55, "rgba(" + atmo + ",0.22)");
-    ring.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = ring;
-    ctx.beginPath(); ctx.arc(x, y, R * 1.13, 0, Math.PI * 2); ctx.fill();
+    light = light || { x: -0.55, y: -0.5 };
+    const len = Math.hypot(light.x, light.y) || 1, ux = light.x / len, uy = light.y / len;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    // halo atmosphérique diffus tout autour du disque
+    const halo = ctx.createRadialGradient(x, y, R * 0.95, x, y, R * 1.2);
+    halo.addColorStop(0, "rgba(" + atmo + ",0)");
+    halo.addColorStop(0.45, "rgba(" + atmo + ",0.16)");
+    halo.addColorStop(1, "rgba(" + atmo + ",0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(x, y, R * 1.2, 0, Math.PI * 2); ctx.fill();
+    // limbe ensoleillé : croissant brillant côté lumière (diffusion atmosphérique)
+    const ex = x + ux * R, ey = y + uy * R;
+    ctx.beginPath(); ctx.arc(x, y, R * 1.06, 0, Math.PI * 2); ctx.arc(x, y, R * 0.84, 0, Math.PI * 2, true);
+    ctx.clip("evenodd");
+    const limb = ctx.createRadialGradient(ex, ey, 0, ex, ey, R * 1.1);
+    limb.addColorStop(0, "rgba(" + atmo + ",0.55)");
+    limb.addColorStop(0.5, "rgba(" + atmo + ",0.14)");
+    limb.addColorStop(1, "rgba(" + atmo + ",0)");
+    ctx.fillStyle = limb;
+    ctx.fillRect(x - R * 1.2, y - R * 1.2, R * 2.4, R * 2.4);
+    ctx.restore();
   }
 
   // realistic planet from a real texture (falls back to procedural while loading)
@@ -228,12 +253,17 @@
     }
     const hlx = x + light.x * R * 0.45, hly = y + light.y * R * 0.45;
     const sg = ctx.createRadialGradient(hlx, hly, R * 0.1, hlx, hly, R * 1.5);
-    sg.addColorStop(0, "rgba(255,255,255,0.12)");
-    sg.addColorStop(0.45, "rgba(0,0,0,0)");
-    sg.addColorStop(1, "rgba(0,0,0,0.78)");
+    sg.addColorStop(0, "rgba(255,255,255,0.14)");
+    sg.addColorStop(0.42, "rgba(0,0,0,0)");
+    sg.addColorStop(1, "rgba(0,0,0,0.88)");        // nuit plus profonde (terminateur net)
     ctx.fillStyle = sg; ctx.fillRect(x - R, y - R, 2 * R, 2 * R);
+    // reflet spéculaire subtil au point subsolaire
+    const sp = ctx.createRadialGradient(hlx, hly, 0, hlx, hly, R * 0.5);
+    sp.addColorStop(0, "rgba(255,255,255,0.16)");
+    sp.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sp; ctx.fillRect(x - R, y - R, 2 * R, 2 * R);
     ctx.restore();
-    atmoRim(ctx, x, y, R, p);
+    atmoRim(ctx, x, y, R, p, light);
   }
 
   window.NovaePlanet = { drawPlanet, drawPlanetTextured, drawBall, drawRings, drawSun, ringGeom, setTextureLoadCallback, preloadTextures };

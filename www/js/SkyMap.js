@@ -183,7 +183,7 @@ function SkyMap() {
     f.sats = [];
     if (window.satellite && sats.current.length) {
       const gmst = window.satellite.gstime(date), gd = { longitude: o.lon * DEG, latitude: o.lat * DEG, height: o.elev / 1000 };
-      sats.current.forEach((st) => { try { const pv = window.satellite.propagate(st.satrec, date); if (!pv.position) return; const ecf = window.satellite.eciToEcf(pv.position, gmst); const la = window.satellite.ecfToLookAngles(gd, ecf); f.sats.push({ az: la.azimuth / DEG, alt: la.elevation / DEG, name: st.name, rangeKm: la.rangeSat }); } catch (e) {} });
+      sats.current.forEach((st) => { try { const pv = window.satellite.propagate(st.satrec, date); if (!pv.position) return; const ecf = window.satellite.eciToEcf(pv.position, gmst); const la = window.satellite.ecfToLookAngles(gd, ecf); f.sats.push({ az: la.azimuth / DEG, alt: la.elevation / DEG, name: st.name, rangeKm: la.rangeSat, satrec: st.satrec }); } catch (e) {} });
     }
     f.mw = mwRaDec().map((p) => { const a = A2(p[0], p[1]); return [a.az, a.alt, p[2]]; });
     f.dust = dust.map((d) => { const a = A2(d.ra, d.dec); return [a.az, a.alt, d.b]; });
@@ -381,7 +381,11 @@ function SkyMap() {
 
   function loadSats() {
     if (!window.satellite) return;
-    const ids = [[25544, "ISS"], [20580, "Hubble"], [48274, "Tiangong"]];
+    const ids = [
+      [25544, "ISS"], [20580, "Hubble"], [48274, "Tiangong"],
+      [25338, "NOAA 15"], [28654, "NOAA 18"], [33591, "NOAA 19"],
+      [25994, "Terra"], [27424, "Aqua"], [39084, "Landsat 8"],
+    ];
     Promise.all(ids.map(([id, nm]) => fetch("https://tle.ivanstanojevic.me/api/tle/" + id).then((r) => r.json()).then((j) => ({ name: nm, satrec: window.satellite.twoline2satrec(j.line1, j.line2) })).catch(() => null)))
       .then((list) => { sats.current = list.filter(Boolean); refresh(); });
   }
@@ -650,7 +654,7 @@ function PlanetHUD({ data, kind, obs, date }) {
 }
 
 function InfoCard({ sel, obs, date, onClose }) {
-  const { useRef, useEffect } = React;
+  const { useRef, useEffect, useState } = React;
   const { data, kind } = sel;
   const thumb = useRef(null);
   const AS = window.NVAstro;
@@ -725,6 +729,29 @@ function InfoCard({ sel, obs, date, onClose }) {
   }, [sel.ra, sel.dec, obs.lat, obs.lon, date]);
 
   const fmtT = (d) => d ? d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "—";
+  const card = (az) => ["N", "NE", "E", "SE", "S", "SO", "O", "NO"][Math.round((((az % 360) + 360) % 360) / 45) % 8];
+
+  // --- Satellites : prochain passage > 10° au-dessus de l'observateur (SGP4, prochaines 24 h) ---
+  const [pass, setPass] = useState(null);
+  useEffect(() => {
+    if (kind !== "satellite" || !data.satrec || !window.satellite) { setPass(null); return; }
+    try {
+      const S = window.satellite, D = Math.PI / 180;
+      const gd = { longitude: obs.lon * D, latitude: obs.lat * D, height: obs.elev / 1000 };
+      let inPass = false, p = null;
+      for (let m = 0; m <= 1440; m += 0.5) {            // pas de 30 s sur 24 h
+        const t = new Date(date.getTime() + m * 60000);
+        const pv = S.propagate(data.satrec, t); if (!pv.position) continue;
+        const la = S.ecfToLookAngles(gd, S.eciToEcf(pv.position, S.gstime(t)));
+        const el = la.elevation / D;
+        if (el > 10) {
+          if (!inPass) { inPass = true; p = { start: t, maxEl: el, max: t, az0: la.azimuth / D }; }
+          else if (el > p.maxEl) { p.maxEl = el; p.max = t; }
+        } else if (inPass) { p.end = t; p.az1 = la.azimuth / D; break; }
+      }
+      setPass(p);
+    } catch (e) { setPass(null); }
+  }, [kind, data, obs.lat, obs.lon, date]);
 
   const rows = []; let badge, badgeColor;
   const riseSetInfo = (en) => { try { const o = AS.observer(obs.lat, obs.lon, obs.elev); const r = AS.riseSet(en, date, o, +1), s = AS.riseSet(en, date, o, -1); const f = (d) => d ? d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "—"; if (r) rows.push(["Prochain lever", f(r)]); if (s) rows.push(["Prochain coucher", f(s)]); } catch (e) {} };
@@ -753,6 +780,16 @@ function InfoCard({ sel, obs, date, onClose }) {
     React.createElement("div", { className: "info-badge", style: { color: badgeColor, borderColor: badgeColor } }, badge),
     React.createElement("h3", null, data.name),
     React.createElement("table", { className: "info-table" }, React.createElement("tbody", null, rows.map(([k, val]) => React.createElement("tr", { key: k }, React.createElement("td", null, k), React.createElement("td", null, String(val)))))),
+    kind === "satellite" && React.createElement("div", { className: "tonight-box" },
+      React.createElement("div", { className: "tonight-head" },
+        React.createElement("span", null, "🛰 Prochain passage"),
+        pass && React.createElement("span", { className: "tonight-vis up" }, "max " + pass.maxEl.toFixed(0) + "°")),
+      pass
+        ? React.createElement("div", { className: "tonight-row" },
+            React.createElement("span", null, "↑ ", React.createElement("strong", null, fmtT(pass.start)), " " + card(pass.az0)),
+            pass.end && React.createElement("span", null, "↓ ", fmtT(pass.end) + " " + card(pass.az1)),
+            React.createElement("span", null, "culmination ", fmtT(pass.max)))
+        : React.createElement("div", { className: "tonight-row" }, React.createElement("span", null, "Aucun passage > 10° dans les 24 h"))),
     sky && React.createElement("div", { className: "tonight-box" },
       React.createElement("div", { className: "tonight-head" },
         React.createElement("span", null, "🌙 " + I18N.t("sky_tonight")),
