@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Novaé — Astronomie</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- PWA : app installable -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0a1024" />
+  <meta name="description" content="Le ciel en direct : planètes réalistes, satellites & ISS, ciel profond, supernovæ." />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Novaé" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" />
+  <!-- Bibliothèques cœur rapatriées en local → 1er chargement hors-ligne, pas de dépendance CDN -->
+  <!-- React (no build step) -->
+  <script src="lib/react.production.min.js"></script>
+  <script src="lib/react-dom.production.min.js"></script>
+  <!-- Real astronomy: ephemerides (planets/Sun/Moon), alt-az, sidereal time -->
+  <script src="lib/astronomy.browser.min.js"></script>
+  <!-- Satellites: SGP4 propagation -->
+  <script src="lib/satellite.min.js"></script>
+  <!-- 3D sky (WebGL) -->
+  <script src="lib/three.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- data + helpers -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/deepsky.js"></script>
+  <script src="js/astro.js"></script>
+  <script src="js/planetRender.js"></script>
+  <!-- components -->
+  <script src="js/SkyMap.js"></script>
+  <script src="js/SkyMap3D.js"></script>
+  <script src="js/PlanetTracker.js"></script>
+  <script src="js/LightPollution.js"></script>
+  <script src="js/Timeline.js"></script>
+  <script src="js/Events.js"></script>
+  <script src="js/Library.js"></script>
+  <script src="js/App.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NOVAÉ — Fonctionnalités v2.6</title>
+<style>
+  :root { --bg:#04060f; --panel:#0b1228; --border:rgba(125,160,240,0.18); --text:#eaf0ff; --muted:#8794ba; --accent:#58c8ff; --accent2:#b98bff; --good:#46e0a0; --warn:#ff9d3c; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; padding:40px 18px 80px; }
+  .doc { max-width:880px; margin:0 auto; }
+  .hero { text-align:center; margin-bottom:44px; }
+  .hero .logo { font-size:44px; text-shadow:0 0 18px var(--accent),0 0 40px var(--accent2); }
+  h1 { font-size:32px; letter-spacing:3px; margin:8px 0 4px; }
+  .sub { color:var(--muted); font-size:14px; }
+  .badge-row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .badge { border:1px solid var(--border); border-radius:999px; padding:3px 12px; font-size:12px; color:var(--accent); }
+  h2 { font-size:21px; margin:44px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--accent2); }
+  h3 { font-size:16px; margin:22px 0 8px; color:#cfe2ff; }
+  p { font-size:14px; margin-bottom:10px; }
+  .muted { color:var(--muted); }
+  table { width:100%; border-collapse:collapse; margin:12px 0 18px; font-size:13px; }
+  th { text-align:left; color:var(--muted); font-weight:600; font-size:12px; padding:7px 10px; border-bottom:1px solid var(--border); }
+  td { padding:7px 10px; border-bottom:1px solid rgba(125,160,240,0.09); vertical-align:top; }
+  .ok { color:var(--good); } .part { color:var(--warn); } .plan { color:var(--muted); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin:12px 0; }
+  ul { margin:6px 0 12px 22px; font-size:14px; }
+  li { margin-bottom:4px; }
+  code { background:rgba(88,200,255,0.1); border-radius:5px; padding:1px 6px; font-size:12.5px; color:#a8dcff; }
+  .new { background:rgba(70,224,160,0.14); color:var(--good); border-radius:999px; font-size:10.5px; padding:1px 8px; margin-left:6px; vertical-align:middle; }
+  .foot { text-align:center; color:var(--muted); font-size:12px; margin-top:56px; }
+  a { color:var(--accent); }
+  @media print { body { background:#fff; color:#111; } .card { border-color:#ccc; background:#f7f8fc; } h2 { border-color:#888; } }
+</style>
+</head>
+<body>
+<div class="doc">
+
+<div class="hero">
+  <div class="logo">✦</div>
+  <h1>NOVAÉ</h1>
+  <div class="sub">Application d'astronomie en réalité augmentée · Documentation des fonctionnalités</div>
+  <div class="badge-row">
+    <span class="badge">Version 2.6 · Juillet 2026</span>
+    <span class="badge">PWA installable</span>
+    <span class="badge">8 langues</span>
+    <span class="badge">Accessible partout (HTTPS)</span>
+  </div>
+</div>
+
+<h2>🆕 Dernières modifications (17–18 juillet 2026)</h2>
+<div class="card">
+<ul>
+  <li><b>Suivi du téléphone dès l'ouverture</b> — le ciel s'aligne automatiquement sur la direction visée au lancement (Android direct, iPhone en un tap). Désactivable dans le menu ⚙, choix mémorisé.</li>
+  <li><b>Accès internet</b> — l'app est publiée via tunnel sécurisé HTTPS : utilisable en 4G/5G partout, plus seulement en WiFi local. Raccourci « Lancer Novae.bat » sur le Bureau : démarre tout et régénère le QR code.</li>
+  <li><b>Planètes photoréalistes</b> — textures NASA 2048px sur les 9 corps + la Lune, mapping sphérique corrigé (pôles nets), anneaux de Saturne échantillonnés depuis les vraies bandes Cassini (divisions exactes), villes illuminées côté nuit de la Terre, ombre des anneaux sur le globe, lunes cratérisées teintées (Io, Europe, Titan…).</li>
+  <li><b>Frise cosmique</b> — nouvel onglet ⏳ : remontez 13,8 milliards d'années jusqu'au Big Bang. Naissance du Soleil façon images ALMA (disque protoplanétaire à sillons), étoiles aux vraies couleurs spectrales, galaxies spirales.</li>
+  <li><b>Interface épurée</b> — ciel quasi noir à fort contraste, un seul menu ⚙ (bas gauche) regroupant calques, visée, heure, position et capture.</li>
+  <li><b>Fil d'actualités spatiales</b> temps réel (onglet Événements) et <b>correction de déclinaison magnétique WMM</b> pour une boussole juste.</li>
+  <li><b>Soleil réaliste</b> — disque blanc à aigrettes photo, fini la tache jaune.</li>
+</ul>
+</div>
+
+<h2>1. Vue d'ensemble</h2>
+<p>Novaé affiche le ciel <b>réel</b> de votre position, à l'instant présent : vraies étoiles (catalogue Hipparcos), vraies positions des planètes (éphémérides astronomy-engine), vrais satellites (propagation SGP4). Cinq onglets + la frise : <b>Ciel · Planètes · Frise · Pollution · Événements · Galerie</b>.</p>
+<table>
+  <tr><th>Chiffre clé</th><th>Valeur</th></tr>
+  <tr><td>Étoiles affichées</td><td>~5 000 (Hipparcos, mag ≤ 6) + champ profond</td></tr>
+  <tr><td>Constellations</td><td>88 IAU, tracés et noms français</td></tr>
+  <tr><td>Planètes</td><td>8 + Pluton + Soleil + Lune, textures NASA 2k</td></tr>
+  <tr><td>Lunes</td><td>14 principales (galiléennes, Titan, Triton, Charon…)</td></tr>
+  <tr><td>Satellites temps réel</td><td>ISS · Hubble · Tiangong · NOAA · Terra…</td></tr>
+  <tr><td>Ciel profond</td><td>107 Messier + 5 trous noirs notables</td></tr>
+  <tr><td>Supernovæ / hypernovæ / instables</td><td>8 / 4 / 4 (filtre exclusif)</td></tr>
+  <tr><td>Profondeur temporelle</td><td>Présent ↔ Big Bang (13,8 Md années)</td></tr>
+  <tr><td>Langues</td><td>FR · EN · ES · DE · IT · PT · AR (RTL) · ZH</td></tr>
+</table>
+
+<h2>2. Fonctionnalités détaillées</h2>
+
+<h3>🌌 Ciel en direct <span class="new">suivi auto</span></h3>
+<ul>
+  <li>Carte du ciel calculée pour <b>votre position GPS et l'heure exacte</b> (azimut/altitude, temps sidéral local)</li>
+  <li><b>Suivi du téléphone dès l'ouverture</b> : levez le téléphone, le ciel suit (matrice de rotation complète, stable à toute inclinaison, 60 fps, correction WMM)</li>
+  <li>Réticule central « pointez pour identifier » + calibrage par glissement + Recalibrer</li>
+  <li>Fond quasi noir astrophoto, étoiles colorées selon l'indice B–V, halos et aigrettes sur les brillantes</li>
+  <li>Voie Lactée sur le vrai plan galactique, nébulosités Hα, champ d'étoiles faibles</li>
+  <li>Recherche d'astres (étoiles, planètes, Messier, supernovæ), zoom molette/pincement</li>
+  <li>Survol/visée d'une constellation : figure surlignée + nom</li>
+  <li>Voyage temporel : ±1 h, accéléré ×600, retour au direct</li>
+  <li>Vue 3D WebGL alternative (photo Voie Lactée, gyroscope)</li>
+  <li>Menu ⚙ unique : calques (constellations, étiquettes, Voie Lactée, planètes, ciel profond, satellites, supernovæ, sous l'horizon), visée N/E/S/O/Zénith, heure, position, capture 📸</li>
+</ul>
+
+<h3>🪐 Planètes photoréalistes <span class="new">textures 2k</span></h3>
+<ul>
+  <li>Textures NASA/USGS 2048px (Mercure → Pluton + Lune), repli hors-ligne automatique</li>
+  <li>Anneaux de Saturne <b>réels</b> : 96 anneaux concentriques échantillonnés des données Cassini — divisions de Cassini et Encke à leur vraie position, ombre portée sur le globe</li>
+  <li>Terre : nuages animés + <b>villes illuminées côté nuit</b> (NASA Black Marble)</li>
+  <li>Système solaire vu de dessus : positions héliocentriques réelles, vitesse réglable jusqu'à ×365 j/s</li>
+  <li>Gros plan animé : rotation à la vraie durée du jour, lunes en orbite aux vraies périodes, surfaces cratérisées teintées</li>
+  <li>Fiches complètes : distance, période, diamètre, lever/coucher à votre position</li>
+</ul>
+
+<h3>⏳ Frise cosmique <span class="new">nouveau</span></h3>
+<ul>
+  <li>Curseur réversible : présent ↔ Big Bang, 8 époques illustrées et animées</li>
+  <li>Naissance du Soleil <b>style ALMA/HL Tauri</b> : annelures de poussière, sillons creusés par les protoplanètes texturées, occultation réaliste</li>
+  <li>Fond diffus cosmologique, premières étoiles Population III à aigrettes, galaxies spirales à bulbe</li>
+  <li>Note scientifique honnête : l'Univers opaque avant 380 000 ans n'est pas « filmable »</li>
+</ul>
+
+<h3>💥 Filtre Supernovæ (exclusif)</h3>
+<ul>
+  <li>✕ violet : 8 supernovæ historiques (Crabe 1054, Tycho, Kepler, SN 1987A…)</li>
+  <li>✸ rouge : 4 hypernovæ/candidates (Eta Carinae, WR 104…)</li>
+  <li>⚠ orange : étoiles instables (Bételgeuse, Antarès, Rigel, Spica)</li>
+  <li>Fiches : type, année, vestige, constellation, notes pédagogiques</li>
+</ul>
+
+<h3>🛰 Satellites & ciel profond</h3>
+<ul>
+  <li>ISS, Hubble, Tiangong, NOAA 15/18/19, Terra, Aqua, Landsat 8 — propagation SGP4 sur TLE frais, positions temps réel dans le ciel</li>
+  <li>107 objets Messier (nébuleuses, galaxies, amas) + trous noirs (Sgr A*, M87*, Cygnus X-1…) avec halo orange</li>
+</ul>
+
+<h3>💡 Pollution lumineuse</h3>
+<ul>
+  <li>Échelle de Bortle 1→9 interactive avec aperçu du ciel attendu (étoiles visibles, Voie Lactée, halo urbain)</li>
+  <li>Suggestions de sites d'observation</li>
+</ul>
+
+<h3>🔔 Événements & actualités <span class="new">actus temps réel</span></h3>
+<ul>
+  <li>Éclipses, pluies de météores (Perséides, Géminides…), oppositions, aurores — compte à rebours J−n, filtres par type</li>
+  <li>Fil d'actualités spatiales temps réel (Spaceflight News : NASA, ESA, SpaceX…)</li>
+</ul>
+
+<h3>📷 Galerie & confort</h3>
+<ul>
+  <li>Capture du ciel en un bouton, métadonnées (date, lieu, coordonnées), stockage local</li>
+  <li>Mode nuit rouge intégral, 8 langues dont arabe RTL, PWA installable, cœur utilisable hors-ligne</li>
+</ul>
+
+<h2>3. Accès à l'application</h2>
+<table>
+  <tr><th>Moyen</th><th>Adresse</th><th>Notes</th></tr>
+  <tr><td>PC (local)</td><td><code>http://localhost:8000</code></td><td>Serveur : « Lancer Novae.bat » ou novae-server.ps1</td></tr>
+  <tr><td>Téléphone (même WiFi)</td><td><code>http://192.168.1.101:8000</code></td><td>QR : Novae-QR.png (Bureau)</td></tr>
+  <tr><td>Partout (internet)</td><td>URL <code>*.trycloudflare.com</code></td><td>HTTPS → mode AR ✓ · QR : Novae-QR-Internet.png · l'URL change à chaque lancement du tunnel</td></tr>
+</table>
+<p class="muted">« Lancer Novae.bat » (Bureau) démarre serveur + tunnel et régénère le QR internet automatiquement. Sur téléphone : « Ajouter à l'écran d'accueil » pour l'installer comme une app.</p>
+
+<h2>4. Problèmes corrigés</h2>
+<table>
+  <tr><th>Problème</th><th>Solution</th></tr>
+  <tr><td>Téléphone ne pouvait pas se connecter</td><td>Serveur réécrit (toutes interfaces) + règle pare-feu (admin) + gestion réseau Public</td></tr>
+  <tr><td>Mode AR impossible sur mobile (HTTP)</td><td>Tunnel HTTPS Cloudflare</td></tr>
+  <tr><td>Planètes en « taches » colorées</td><td>Textures réelles dès ~6 px, Soleil photo-réaliste</td></tr>
+  <tr><td>Pôles de la Terre étalés sur le bord du disque</td><td>Mapping sphérique corrigé (fenêtrage de latitude)</td></tr>
+  <tr><td>Boussole décalée</td><td>Déclinaison magnétique WMM (NOAA) + calibrage manuel</td></tr>
+  <tr><td>Interface chargée</td><td>Menu ⚙ unique, contrôles discrets, ciel plein écran</td></tr>
+  <tr><td>Ciel trop clair</td><td>Fond quasi noir (#010207), contraste astrophoto</td></tr>
+  <tr><td>Anciens fichiers servis après mise à jour</td><td>Versionnage du cache service worker (v26)</td></tr>
+</table>
+
+<h2>5. Spécifications techniques</h2>
+<div class="card">
+<ul>
+  <li><b>Stack</b> : React 18 sans build (local), Canvas 2D (projection stéréographique), Three.js WebGL (vue 3D), PWA + service worker <code>novae-v26</code></li>
+  <li><b>Astronomie</b> : astronomy-engine (éphémérides Soleil/Lune/planètes, temps sidéral, lever/coucher) · satellite.js (SGP4/TLE) · catalogue d3-celestial (Hipparcos mag ≤ 6, 88 constellations FR)</li>
+  <li><b>Textures</b> : NASA/USGS 2k via jsDelivr (CORS), bandes d'anneaux Cassini, Black Marble (lumières nocturnes)</li>
+  <li><b>APIs temps réel</b> : TLE (ivanstanojevic.me) · Spaceflight News v4 · NOAA WMM (déclinaison)</li>
+  <li><b>Capteurs</b> : DeviceOrientation (absolu prioritaire), matrice de rotation ZXY complète, géolocalisation</li>
+  <li><b>Serveur</b> : PowerShell TcpListener (0.0.0.0:8000) · tunnel cloudflared (HTTPS public)</li>
+  <li><b>Hors-ligne</b> : app shell + textures en cache après 1ᵉʳ chargement, ciel de repli intégré</li>
+</ul>
+</div>
+
+<h2>6. Structure du projet</h2>
+<div class="card" style="font-family:Consolas,monospace; font-size:12.5px; line-height:1.9;">
+novae/www/ — index.html · styles.css · manifest.json · sw.js (cache v26)<br>
+js/ — App.js (shell) · SkyMap.js (ciel 2D+AR) · SkyMap3D.js (WebGL) · PlanetTracker.js (orbites) ·<br>
+&nbsp;&nbsp;&nbsp;&nbsp;planetRender.js (rendu texturé) · Timeline.js (frise) · Events.js (événements+actus) ·<br>
+&nbsp;&nbsp;&nbsp;&nbsp;LightPollution.js (Bortle) · Library.js (galerie) · astro.js (éphémérides+WMM) ·<br>
+&nbsp;&nbsp;&nbsp;&nbsp;deepsky.js (Messier+trous noirs) · data.js (catalogues) · i18n.js (8 langues) · main.js<br>
+lib/ — react · astronomy-engine · satellite.js · three.js (100 % local)<br>
+tools/cloudflared.exe · Lancer-Novae.ps1 · ../novae-server.ps1
+</div>
+
+<h2>7. Roadmap</h2>
+<ul>
+  <li class="plan">📋 URL internet fixe (GitHub Pages — nécessite installation de Git + compte GitHub)</li>
+  <li class="plan">📋 Carte de pollution lumineuse satellite NOAA/VIIRS réelle</li>
+  <li class="plan">📋 Catalogue NGC/IC complet (13 000+ objets), textures 4K–8K</li>
+  <li class="plan">📋 Passages ISS prévus depuis votre position, alertes aurores (indice Kp)</li>
+  <li class="plan">📋 Bibliothèque synchronisée multi-appareils, narrations audio, WCAG 2.1 AA</li>
+</ul>
+
+<div class="foot">✦ NOVAÉ — Documentation des fonctionnalités · v2.6 · 18 juillet 2026 ✦</div>
+</div>
+</body>
+</html>
