@@ -31,6 +31,7 @@ function SkyMap() {
   const aosRef = useRef(null);  // AbsoluteOrientationSensor (Android : quaternion précis)
   const aosOn = useRef(false);  // capteur quaternion actif → ignore les événements Euler
   const chBranch = useRef(null); // iOS : branche du cap boussole (avant/après verticale), avec hystérésis
+  const chAnchor = useRef(null); // iOS : décalage gyro→nord ancré une fois (mouvement fluide, zéro saut)
   // secours utilisateur : certains téléphones ont un cap inversé de 180° (capteur/coque) —
   // bascule mémorisée « N/S inversés » dans le menu ⚙
   const azFlipRef = useRef(null);
@@ -524,12 +525,24 @@ function SkyMap() {
     // ciel, cos β < 0) la projection s'inverse : alpha = 180 − cap. Une HYSTÉRÉSIS fige la
     // branche autour de la verticale (|cos β| < 0.12) : sans elle, le bruit du capteur faisait
     // basculer le ciel de 180° quand on visait près de l'horizon (le « bug de mouvement »).
+    // iPhone — architecture « ancre » (celle des vraies apps AR) : le suivi du mouvement vient
+    // du GYROSCOPE (alpha relatif : fluide, 60 Hz, zéro saut) ; la boussole ne sert qu'à CALER
+    // ce gyroscope sur le nord une fois au départ, puis à corriger sa dérive très doucement.
+    // Fini les à-coups et les bascules de 180° qu'donnait la boussole utilisée en continu.
     let alphaDeg = e.alpha;
     const ch = e.webkitCompassHeading;
     if (typeof ch === "number" && ch >= 0 && (e.webkitCompassAccuracy == null || e.webkitCompassAccuracy >= 0)) {
       const cb2 = Math.cos(e.beta * DEG);
       if (Math.abs(cb2) >= 0.12 || chBranch.current == null) chBranch.current = cb2 >= 0;
-      alphaDeg = chBranch.current ? 360 - ch : 180 - ch;
+      const chAlpha = chBranch.current ? 360 - ch : 180 - ch;   // alpha absolu instantané (bruité)
+      const inst = ((chAlpha - e.alpha) % 360 + 360) % 360;      // décalage gyro→nord mesuré
+      if (chAnchor.current == null) chAnchor.current = inst;     // ancrage initial
+      else if (Math.abs(cb2) > 0.25) {
+        // correction de dérive lente, uniquement quand la boussole est fiable (loin de la verticale)
+        let d = ((inst - chAnchor.current + 540) % 360) - 180;
+        chAnchor.current = ((chAnchor.current + d * 0.02) % 360 + 360) % 360;
+      }
+      alphaDeg = e.alpha + chAnchor.current;
       absSeen.current = true; // le cap iOS est absolu : ignore les événements relatifs concurrents
     }
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
@@ -566,7 +579,7 @@ function SkyMap() {
     // la fiche complète s'ouvre au tap (selectCenter)
     if (motionOn.current) motionRAF.current = requestAnimationFrame(motionLoop);
   }, []);
-  const recalibrate = () => { azOffset.current = 0; altOffset.current = 0; };
+  const recalibrate = () => { azOffset.current = 0; altOffset.current = 0; chAnchor.current = null; chBranch.current = null; };
   const selectCenter = () => {
     const canvas = canvasRef.current; if (!canvas) return; const rect = canvas.getBoundingClientRect();
     const cx = rect.width / 2, cy = rect.height / 2, hit = canvas._hit || {};
@@ -588,7 +601,7 @@ function SkyMap() {
     orient.current = { az: null, alt: null, roll: 0 };
     // repart du capteur brut : un calibrage manuel fait quand la boussole était fausse
     // resterait sinon appliqué et fausserait tout après correction
-    azOffset.current = 0; altOffset.current = 0; chBranch.current = null;
+    azOffset.current = 0; altOffset.current = 0; chBranch.current = null; chAnchor.current = null;
     if (view.current.scale < initScale.current) { view.current.scale = initScale.current * 1.5; target.current.scale = view.current.scale; }
     // Android : AbsoluteOrientationSensor (quaternion fusionné gyro+magnéto+gravité) —
     // le cap le plus précis disponible, sans les ambiguïtés des angles d'Euler
