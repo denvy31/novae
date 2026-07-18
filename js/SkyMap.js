@@ -31,6 +31,10 @@ function SkyMap() {
   const aosRef = useRef(null);  // AbsoluteOrientationSensor (Android : quaternion précis)
   const aosOn = useRef(false);  // capteur quaternion actif → ignore les événements Euler
   const chBranch = useRef(null); // iOS : branche du cap boussole (avant/après verticale), avec hystérésis
+  // secours utilisateur : certains téléphones ont un cap inversé de 180° (capteur/coque) —
+  // bascule mémorisée « N/S inversés » dans le menu ⚙
+  const azFlipRef = useRef(null);
+  if (azFlipRef.current === null) { try { azFlipRef.current = localStorage.getItem("novae-azflip") === "1"; } catch (e) { azFlipRef.current = false; } }
   const hoverRef = useRef(null); // hover tooltip element
   const hoveredConst = useRef(-1); // constellation under the cursor / reticle
   const previewRef = useRef(null); // planet icon preview element
@@ -547,7 +551,7 @@ function SkyMap() {
   const motionLoop = useCallback(() => {
     const v = view.current, o = orient.current;
     if (o.az != null) {
-      const taz = ((o.az + azOffset.current) % 360 + 360) % 360;          // + manual calibration
+      const taz = ((o.az + azOffset.current + (azFlipRef.current ? 180 : 0)) % 360 + 360) % 360; // + calibrage manuel + inversion N/S éventuelle
       const talt = Math.max(-30, Math.min(89, o.alt + altOffset.current));
       let d = taz - v.az; if (d > 180) d -= 360; if (d < -180) d += 360;
       // lissage adaptatif : filtre le tremblement de la boussole quand on vise (petits écarts),
@@ -663,6 +667,10 @@ function SkyMap() {
         // suivi du téléphone : activé à l'ouverture, désactivable ici (choix mémorisé)
         chip("📱 " + (motion ? I18N.t("sky_follow_on") : I18N.t("sky_follow")), motion, toggleFollow, " chip-ar"),
         motion && React.createElement("button", { className: "jump-btn", onClick: recalibrate }, "🧭 Recalibrer"),
+        motion && React.createElement("button", {
+          className: "jump-btn", title: "Si le sud indique le nord, touchez ici (mémorisé)",
+          onClick: () => { azFlipRef.current = !azFlipRef.current; try { localStorage.setItem("novae-azflip", azFlipRef.current ? "1" : "0"); } catch (e) {} rerender(); },
+        }, "↔ N/S inversés" + (azFlipRef.current ? " ✓" : " ?")),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🔭 " + I18N.t("sky_layers")),
         chip(I18N.t("sky_constellations"), showLines, () => setShowLines(!showLines)),
@@ -709,24 +717,8 @@ function SkyMap() {
   );
 }
 
-// Étiquette de visée minimaliste (bas d'écran) : mini-image réelle + nom + une ligne
+// Étiquette de visée : juste le nom dans un cadre élégant en bas d'écran (zéro pollution)
 function AimLabel({ info }) {
-  const { useRef, useEffect } = React;
-  const cv = useRef(null);
-  const isBody = info.kind === "planet" || info.kind === "sun" || info.kind === "moon";
-  useEffect(() => {
-    if (!isBody || !cv.current) return;
-    const c = cv.current, P = window.NovaePlanet, dpr = window.devicePixelRatio || 1, S = 40;
-    c.width = S * dpr; c.height = S * dpr;
-    const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const mid = S / 2, light = { x: -0.5, y: -0.5 };
-    if (info.kind === "sun") { P.drawSun(ctx, mid, mid, S * 0.3); return; }
-    const R = S * (info.data.rings ? 0.2 : 0.4);
-    if (info.data.rings) P.drawRings(ctx, mid, mid, R, light, false);
-    P.drawPlanetTextured(ctx, mid, mid, R, info.data, 0.25, light);
-    if (info.data.rings) P.drawRings(ctx, mid, mid, R, light, true);
-  }, [info.name, isBody, info.kind, info.data]);
-
   const SAT_DESC = {
     ISS: "Station spatiale internationale · ~400 km", Hubble: "Télescope spatial · lancé en 1990",
     Tiangong: "Station spatiale chinoise", "NOAA 15": "Satellite météorologique",
@@ -744,12 +736,9 @@ function AimLabel({ info }) {
   else if (info.kind === "messier") desc = "Objet du ciel profond (Messier)";
   else if (info.kind === "blackhole") desc = "Trou noir";
 
-  return React.createElement("div", { className: "aim-label rich" },
-    isBody && React.createElement("canvas", { ref: cv, className: "aim-thumb" }),
-    info.kind === "satellite" && React.createElement("span", { className: "aim-ico" }, "🛰"),
-    React.createElement("div", { className: "aim-text" },
-      React.createElement("div", { className: "aim-name" }, info.name),
-      desc && React.createElement("div", { className: "aim-desc" }, desc)));
+  return React.createElement("div", { className: "aim-pill" },
+    React.createElement("div", { className: "aim-pill-name" }, info.name),
+    desc && React.createElement("div", { className: "aim-pill-desc" }, desc));
 }
 
 // Bottom-right panel: the pointed planet spins (real texture) + all its info

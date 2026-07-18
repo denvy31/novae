@@ -73,6 +73,11 @@ function TimelinePanel() {
     const canvas = canvasRef.current; if (!canvas) return;
     let mounted = true; const t0 = performance.now();
 
+    // sprites doux pré-rendus (halos gaussiens) : particules réalistes au lieu de disques durs
+    const mkSprite = (rgb) => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(" + rgb + ",1)"); gr.addColorStop(0.4, "rgba(" + rgb + ",0.45)"); gr.addColorStop(1, "rgba(" + rgb + ",0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c; };
+    const SPR = { white: mkSprite("255,250,240"), warm: mkSprite("255,190,120"), hot: mkSprite("255,140,60"), blue: mkSprite("170,200,255"), deep: mkSprite("120,60,30") };
+    const spr = (ctx, s, x, y, r, a2) => { ctx.globalAlpha = a2; ctx.drawImage(s, x - r, y - r, 2 * r, 2 * r); };
+
     // Une scène par époque — dessinée avec alpha pour le fondu enchaîné
     const scenes = [
       // 0 — Big Bang : flash central + ondes de choc en expansion (rendu additif)
@@ -92,6 +97,10 @@ function TimelinePanel() {
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
         g.addColorStop(0, "#ffffff"); g.addColorStop(0.25, "#ffe9b0"); g.addColorStop(0.6, "rgba(255,140,60,0.5)"); g.addColorStop(1, "transparent");
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+        // reflet d'objectif horizontal (rendu photo d'une source aveuglante)
+        const flare = ctx.createLinearGradient(cx - R * 2.6, cy, cx + R * 2.6, cy);
+        flare.addColorStop(0, "transparent"); flare.addColorStop(0.5, "rgba(255,235,200," + (0.4 * a).toFixed(3) + ")"); flare.addColorStop(1, "transparent");
+        ctx.fillStyle = flare; ctx.fillRect(cx - R * 2.6, cy - Math.max(1.5, R * 0.03), R * 5.2, Math.max(3, R * 0.06));
         ctx.globalAlpha = a * 0.5; ctx.strokeStyle = "rgba(255,225,170,0.6)"; ctx.lineWidth = 1.2;
         for (let i = 0; i < 12; i++) { const an = (i / 12) * Math.PI * 2 + tm * 0.2; const L1 = R * (1.05 + 0.18 * Math.sin(tm * 3 + i)); ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * R * 0.45, cy + Math.sin(an) * R * 0.45); ctx.lineTo(cx + Math.cos(an) * L1, cy + Math.sin(an) * L1); ctx.stroke(); }
         ctx.restore();
@@ -110,42 +119,55 @@ function TimelinePanel() {
         parts.plasma.forEach((p, i) => {
           const jig = Math.sin(tm * 3 + p.ph) * 6;
           const x = cx + Math.cos(p.a + tm * 0.12) * p.d * R + jig, y = cy + Math.sin(p.a + tm * 0.12) * p.d * R * 0.85 - jig;
-          ctx.fillStyle = i % 3 ? "rgba(255,185,110,0.8)" : "rgba(255,250,240,0.9)";
-          ctx.beginPath(); ctx.arc(x, y, p.sz, 0, 7); ctx.fill();
+          // halos gaussiens additifs : le plasma « brille » vraiment au lieu de points durs
+          spr(ctx, i % 3 ? SPR.warm : SPR.white, x, y, p.sz * 2.8, a * 0.75);
         });
+        ctx.globalAlpha = a;
         ctx.restore();
       },
-      // 2 — Noyaux légers : brouillard orange + paires de particules (H/He)
+      // 2 — Noyaux légers : brouillard incandescent + noyaux H/He avec électrons en halo
       (ctx, w, h, tm, a) => {
         ctx.globalAlpha = a;
         const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.5;
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
         const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3);
-        bg.addColorStop(0, "rgba(230,110,60,0.4)"); bg.addColorStop(1, "transparent");
+        bg.addColorStop(0, "rgba(230,110,60,0.35)"); bg.addColorStop(0.6, "rgba(150,60,25,0.15)"); bg.addColorStop(1, "transparent");
         ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
         parts.plasma.forEach((p, i) => {
           if (i % 2) return;
           const x = cx + Math.cos(p.a) * p.d * R, y = cy + Math.sin(p.a) * p.d * R * 0.8;
-          const wob = Math.sin(tm * 1.5 + p.ph) * 2;
-          ctx.fillStyle = "rgba(255,190,130,0.85)"; ctx.beginPath(); ctx.arc(x, y, p.sz * 1.1, 0, 7); ctx.fill();
-          if (i % 6 === 0) { ctx.fillStyle = "rgba(180,210,255,0.8)"; ctx.beginPath(); ctx.arc(x + 5 + wob, y - 4, p.sz * 0.8, 0, 7); ctx.fill(); }
+          const wob = Math.sin(tm * 1.5 + p.ph) * 2.5;
+          spr(ctx, SPR.warm, x, y, p.sz * 2.4, a * 0.7);                        // noyau (proton/He)
+          if (i % 6 === 0) spr(ctx, SPR.blue, x + 6 + wob, y - 5, p.sz * 1.6, a * 0.6); // électron libre
         });
+        ctx.globalAlpha = a;
+        ctx.restore();
       },
-      // 3 — Première lumière : carte CMB granuleuse orange/rouge
+      // 3 — Première lumière : vraie texture du fond diffus (granulation multi-échelle façon Planck)
       (ctx, w, h, tm, a) => {
         ctx.globalAlpha = a * 0.92;
-        ctx.fillStyle = "#2a0f08"; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "#240d06"; ctx.fillRect(0, 0, w, h);
+        // grande échelle : taches chaudes/froides douces
         parts.cmb.forEach((p) => {
-          const r = p.sz * Math.min(w, h);
-          const warm = p.warm > 0.5;
-          const g = ctx.createRadialGradient(p.x * w, p.y * h, 0, p.x * w, p.y * h, r);
-          g.addColorStop(0, warm ? "rgba(255,150,60,0.5)" : "rgba(150,40,20,0.55)"); g.addColorStop(1, "transparent");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x * w, p.y * h, r, 0, 7); ctx.fill();
+          const r = p.sz * Math.min(w, h) * 1.5;
+          spr(ctx, p.warm > 0.5 ? SPR.hot : SPR.deep, p.x * w, p.y * h, r, a * (p.warm > 0.5 ? 0.34 : 0.5));
         });
+        // petite échelle : granulation fine par-dessus (aspect carte Planck)
+        parts.cmb.forEach((p, i) => {
+          if (i % 2) return;
+          const r = p.sz * Math.min(w, h) * 0.5;
+          spr(ctx, p.warm > 0.4 ? SPR.warm : SPR.deep, ((p.x + 0.37) % 1) * w, ((p.y + 0.61) % 1) * h, r, a * 0.3);
+        });
+        ctx.globalAlpha = a;
       },
-      // 4 — Premières étoiles : géantes bleues Population III, halos photo additifs
+      // 4 — Premières étoiles : géantes bleues Population III dans leur nuage natal
       (ctx, w, h, tm, a) => {
         ctx.globalAlpha = a;
         ctx.save(); ctx.globalCompositeOperation = "lighter";
+        // voiles de gaz primordial (nébulosité bleutée diffuse)
+        spr(ctx, SPR.blue, w * 0.3, h * 0.35, Math.min(w, h) * 0.4, a * 0.10);
+        spr(ctx, SPR.blue, w * 0.72, h * 0.6, Math.min(w, h) * 0.32, a * 0.08);
+        spr(ctx, SPR.deep, w * 0.55, h * 0.25, Math.min(w, h) * 0.3, a * 0.14);
         parts.stars3.forEach((p, i) => {
           const x = p.x * w, y = p.y * h, tw = 0.85 + 0.15 * Math.sin(tm * 2 + i);
           ctx.globalAlpha = a * 0.9;
@@ -169,9 +191,12 @@ function TimelinePanel() {
         });
         ctx.restore();
       },
-      // 5 — Premières galaxies : spirales avec bulbe brillant et deux bras
+      // 5 — Premières galaxies : spirales avec bulbe brillant et deux bras, toile cosmique en fond
       (ctx, w, h, tm, a) => {
         ctx.globalAlpha = a;
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
+        spr(ctx, SPR.blue, w * 0.5, h * 0.5, Math.min(w, h) * 0.55, a * 0.05);
+        ctx.restore(); ctx.globalAlpha = a;
         parts.gals.forEach((p) => {
           const x = p.x * w, y = p.y * h, r = p.sz * Math.min(w, h), rot = p.rot + tm * 0.02;
           ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
@@ -235,7 +260,8 @@ function TimelinePanel() {
             P.drawPlanetTextured(ctx, b.x, b.y, b.pr, b.pl, tm * 0.02 + b.i * 0.3, { x: (cx - b.x) / m, y: (cy - b.y) / m });
           };
           bodies.filter((b) => !b.front).forEach(drawBody);   // derrière l'étoile
-          P.drawSun(ctx, cx, cy, R * 0.13);
+          // jeune Soleil : vraie photosphère NASA (granulation), plus un simple orbe
+          if (P.drawSunTextured) P.drawSunTextured(ctx, cx, cy, R * 0.13, tm * 0.01); else P.drawSun(ctx, cx, cy, R * 0.13);
           bodies.filter((b) => b.front).forEach(drawBody);    // devant
         } else {
           const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.3);

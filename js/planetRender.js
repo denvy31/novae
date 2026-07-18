@@ -250,6 +250,7 @@
     lights: [LOC + "lights.png", "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_lights_2048.png"],
     ringcolor: [LOC + "ringcolor.jpg", TEX_1K + "saturnringcolor.jpg"],
     ringpattern: [LOC + "ringpattern.gif", TEX_1K + "saturnringpattern.gif"],
+    sun: [LOC + "sun.jpg", TEX_1K + "sunmap.jpg"],
   };
   const TEX = {};
   let texCb = null;
@@ -480,5 +481,30 @@
     ctx.restore();
   }
 
-  window.NovaePlanet = { drawPlanet, drawPlanetTextured, drawBall, drawMoonTextured, drawRings, drawSun, ringGeom, setTextureLoadCallback, preloadTextures };
+  // Soleil texturé (photo NASA de la photosphère, granulation réelle) — pour les gros plans.
+  // Couronne discrète + assombrissement centre-bord réel du Soleil.
+  function drawSunTextured(ctx, x, y, r, rot) {
+    const img = getTex("sun");
+    const oc = img ? orthoSphere("sun", img, r, rot || 0) : null;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const corona = ctx.createRadialGradient(x, y, r * 0.9, x, y, r * 2.3);
+    corona.addColorStop(0, "rgba(255,240,200,0.35)");
+    corona.addColorStop(0.45, "rgba(255,200,110,0.12)");
+    corona.addColorStop(1, "transparent");
+    ctx.fillStyle = corona; ctx.beginPath(); ctx.arc(x, y, r * 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    if (!oc) { drawSun(ctx, x, y, r); return; }
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(oc, x - r, y - r, 2 * r, 2 * r);
+    // éclat du cœur + assombrissement centre-bord (photométrie solaire réelle)
+    const hot = ctx.createRadialGradient(x, y, 0, x, y, r);
+    hot.addColorStop(0, "rgba(255,252,235,0.5)"); hot.addColorStop(0.55, "rgba(255,235,180,0.12)"); hot.addColorStop(0.88, "rgba(120,50,0,0.12)"); hot.addColorStop(1, "rgba(90,30,0,0.42)");
+    ctx.fillStyle = hot; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    ctx.restore();
+  }
+
+  window.NovaePlanet = { drawPlanet, drawPlanetTextured, drawBall, drawMoonTextured, drawRings, drawSun, drawSunTextured, ringGeom, setTextureLoadCallback, preloadTextures };
 })();

@@ -9,10 +9,10 @@ function App() {
     return ["sky", "planets", "timeline", "bortle", "events", "library"].includes(h) ? h : "sky";
   });
   const [night, setNight] = useState(false);
-  const [sky3d, setSky3d] = useState(false); // 2D "Sky Tonight" sky by default (3D via toggle)
   const [now, setNow] = useState(new Date());
   const [lang, setLangState] = useState(I18N.get());
-  const [langOpen, setLangOpen] = useState(false);
+  // premier lancement : on demande sa langue à l'utilisateur (modal plein écran, pas de menu déroulant)
+  const [askLang, setAskLang] = useState(() => { try { return !localStorage.getItem("novae-lang"); } catch (e) { return false; } });
 
   // Horloge « ce soir » mise à jour régulièrement (signature Sky Tonight)
   useEffect(() => {
@@ -23,7 +23,7 @@ function App() {
   const chooseLang = (code) => {
     I18N.setLang(code);
     setLangState(code);
-    setLangOpen(false);
+    setAskLang(false);
   };
   const loc = I18N.locale();
   const dateLabel = now.toLocaleDateString(loc, {
@@ -79,64 +79,16 @@ function App() {
         React.createElement("span", { className: "tonight-day" }, dateLabel),
         React.createElement("span", { className: "tonight-time" }, timeLabel),
       ),
-      // Sélecteur de langue
+      // Langue : simple bouton 🌐 qui rouvre le sélecteur plein écran (fiable, sans menu déroulant)
       React.createElement(
-        "div",
-        { className: "lang-wrap" },
-        React.createElement(
-          "button",
-          {
-            className: "lang-btn" + (langOpen ? " on" : ""),
-            onClick: () => setLangOpen(!langOpen),
-            title: tr("lang_label"),
-            "aria-label": tr("lang_label"),
-          },
-          React.createElement(
-            "span",
-            { className: "lang-flag" },
-            I18N.meta().flag,
-          ),
-          React.createElement(
-            "span",
-            { className: "lang-code" },
-            lang.toUpperCase(),
-          ),
-        ),
-        langOpen &&
-          React.createElement(
-            React.Fragment,
-            null,
-            React.createElement("div", {
-              className: "lang-backdrop",
-              onClick: () => setLangOpen(false),
-            }),
-            React.createElement(
-              "div",
-              { className: "lang-menu" },
-              I18N.langs.map((l) =>
-                React.createElement(
-                  "button",
-                  {
-                    key: l.code,
-                    className: "lang-item" + (l.code === lang ? " active" : ""),
-                    onClick: () => chooseLang(l.code),
-                  },
-                  React.createElement(
-                    "span",
-                    { className: "lang-flag" },
-                    l.flag,
-                  ),
-                  React.createElement("span", null, l.name),
-                  l.code === lang &&
-                    React.createElement(
-                      "span",
-                      { className: "lang-check" },
-                      "✓",
-                    ),
-                ),
-              ),
-            ),
-          ),
+        "button",
+        {
+          className: "lang-btn",
+          onClick: () => setAskLang(true),
+          title: tr("lang_label"),
+          "aria-label": tr("lang_label"),
+        },
+        React.createElement("span", { className: "lang-flag" }, "🌐"),
       ),
       React.createElement(
         "button",
@@ -157,19 +109,8 @@ function App() {
     React.createElement(
       "main",
       { className: "content" },
-      tab === "sky" &&
-        React.createElement(
-          React.Fragment,
-          null,
-          React.createElement(sky3d ? SkyMap3D : SkyMap, {
-            key: sky3d ? "3d" : "2d",
-          }),
-          React.createElement(
-            "button",
-            { className: "mode3d-toggle", onClick: () => setSky3d(!sky3d) },
-            sky3d ? tr("view2d") : tr("view3d"),
-          ),
-        ),
+      // vue unique du ciel : la carte immersive qui suit le téléphone (plus de bascule 2D/3D)
+      tab === "sky" && React.createElement(SkyMap),
       tab === "planets" && React.createElement(PlanetTracker, { lang }),
       tab === "timeline" && React.createElement(TimelinePanel, { key: lang }),
       tab === "bortle" && React.createElement(LightPollution),
@@ -193,5 +134,35 @@ function App() {
         ),
       ),
     ),
+
+    // Sélecteur de langue plein écran (premier lancement + bouton 🌐)
+    askLang &&
+      React.createElement(
+        "div",
+        { className: "welcome-overlay" },
+        React.createElement(
+          "div",
+          { className: "welcome-card" },
+          React.createElement("div", { className: "welcome-logo" }, "✦"),
+          React.createElement("h2", null, "NOVAÉ"),
+          React.createElement("p", { className: "welcome-sub" }, "Choisissez votre langue · Choose your language"),
+          React.createElement(
+            "div",
+            { className: "welcome-langs" },
+            I18N.langs.map((l) =>
+              React.createElement(
+                "button",
+                {
+                  key: l.code,
+                  className: "welcome-lang" + (l.code === lang ? " active" : ""),
+                  onClick: () => chooseLang(l.code),
+                },
+                React.createElement("span", { className: "welcome-flag" }, l.flag),
+                React.createElement("span", null, l.name),
+              ),
+            ),
+          ),
+        ),
+      ),
   );
 }

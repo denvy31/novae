@@ -123,13 +123,20 @@
   ];
 
   const events = [
-    { date: "2026-06-21", type: "Solstice", icon: "☀️", title: "Solstice d'été", desc: "Nuit la plus courte de l'année dans l'hémisphère nord." },
-    { date: "2026-07-29", type: "Pluie de météores", icon: "☄️", title: "Delta Aquarides", desc: "ZHR ≈ 25. Radiant dans le Verseau. Mieux avant l'aube." },
-    { date: "2026-08-12", type: "Éclipse", icon: "🌑", title: "Éclipse solaire totale", desc: "Totalité visible depuis l'Islande et l'Espagne. Chemin de 294 km." },
-    { date: "2026-08-12", type: "Pluie de météores", icon: "☄️", title: "Perséides — maximum", desc: "ZHR ≈ 100. Radiant dans Persée. La pluie majeure de l'été." },
-    { date: "2026-09-18", type: "Conjonction", icon: "🪐", title: "Saturne à l'opposition", desc: "Saturne au plus proche et brillante toute la nuit. Anneaux idéaux." },
-    { date: "2026-10-08", type: "Aurore", icon: "🌌", title: "Activité aurorale (Kp 6)", desc: "Tempête géomagnétique prévue. Aurores possibles aux latitudes moyennes." },
-    { date: "2026-12-14", type: "Pluie de météores", icon: "☄️", title: "Géminides — maximum", desc: "ZHR ≈ 120. La meilleure pluie de l'année. Météores lents et brillants." },
+    { date: "2026-06-21", type: "Solstice", icon: "☀️", title: "Solstice d'été", desc: "Nuit la plus courte de l'année dans l'hémisphère nord.",
+      where: "Visible partout — c'est un moment, pas un phénomène localisé. Profitez du crépuscule tardif." },
+    { date: "2026-07-29", type: "Pluie de météores", icon: "☄️", title: "Delta Aquarides", desc: "ZHR ≈ 25. Radiant dans le Verseau. Mieux avant l'aube.",
+      where: "Où voir : partout, idéalement sous un ciel Bortle ≤ 4, entre 2 h et l'aube. Regardez vers le sud-est, allongé, sans télescope — les yeux suffisent." },
+    { date: "2026-08-12", type: "Éclipse", icon: "🌑", title: "Éclipse solaire totale", desc: "Totalité visible depuis l'Islande et l'Espagne. Chemin de 294 km.",
+      where: "Où voir : la totalité traverse l'Islande puis le nord de l'Espagne (Saragosse, Valence vers 20 h 30). Depuis la France : éclipse partielle ~90 % — lunettes spéciales OBLIGATOIRES." },
+    { date: "2026-08-12", type: "Pluie de météores", icon: "☄️", title: "Perséides — maximum", desc: "ZHR ≈ 100. Radiant dans Persée. La pluie majeure de l'été.",
+      where: "Où voir : campagne sans lampadaires (Bortle ≤ 4), après 23 h. Regardez vers le nord-est, dos à la Lune. Comptez 20 min d'adaptation des yeux au noir." },
+    { date: "2026-09-18", type: "Conjonction", icon: "🪐", title: "Saturne à l'opposition", desc: "Saturne au plus proche et brillante toute la nuit. Anneaux idéaux.",
+      where: "Où voir : visible de partout, même en ville. Plein sud vers minuit. Les anneaux se révèlent dès une petite lunette (×50)." },
+    { date: "2026-10-08", type: "Aurore", icon: "🌌", title: "Activité aurorale (Kp 6)", desc: "Tempête géomagnétique prévue. Aurores possibles aux latitudes moyennes.",
+      where: "Où voir : horizon NORD bien dégagé, loin des villes. En France, chances surtout au nord de la Loire ; photos au smartphone (pose 3-10 s) plus sensibles que l'œil." },
+    { date: "2026-12-14", type: "Pluie de météores", icon: "☄️", title: "Géminides — maximum", desc: "ZHR ≈ 120. La meilleure pluie de l'année. Météores lents et brillants.",
+      where: "Où voir : partout sous ciel sombre, dès 21 h (radiant haut vers minuit). Regardez vers l'est-sud-est. Habillez-vous très chaudement !" },
   ];
 
   const stats = {

@@ -6,6 +6,13 @@ function SpaceNews() {
   const I18N = window.NV_I18N;
   const [articles, setArticles] = useState(window.__nvNews || null);
   const [failed, setFailed] = useState(false);
+  // les articles sources sont en anglais ; par défaut on les ouvre traduits dans la
+  // langue de l'app (Google Translate), avec bascule VO possible
+  const lang = I18N.get();
+  const [translate, setTranslate] = useState(lang !== "en");
+  const artUrl = (u) => (translate && lang !== "en")
+    ? "https://translate.google.com/translate?sl=en&tl=" + lang + "&u=" + encodeURIComponent(u)
+    : u;
 
   useEffect(() => {
     if (window.__nvNews) return;
@@ -22,8 +29,11 @@ function SpaceNews() {
 
   const fmt = (iso) => { try { return new Date(iso).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   return React.createElement("div", { className: "news-list" },
+    lang !== "en" && React.createElement("div", { className: "news-lang-row" },
+      React.createElement("button", { className: "chip" + (translate ? " on" : ""), onClick: () => setTranslate(true) }, "🌐 Traduit (" + lang.toUpperCase() + ")"),
+      React.createElement("button", { className: "chip" + (!translate ? " on" : ""), onClick: () => setTranslate(false) }, "🇬🇧 VO anglaise")),
     articles.map((a) => React.createElement("a", {
-      key: a.id, className: "news-card", href: a.url, target: "_blank", rel: "noopener noreferrer",
+      key: a.id, className: "news-card", href: artUrl(a.url), target: "_blank", rel: "noopener noreferrer",
     },
       a.image_url && React.createElement("img", { className: "news-thumb", src: a.image_url, alt: "", loading: "lazy" }),
       React.createElement("div", { className: "news-body" },
@@ -70,7 +80,8 @@ function EventsPanel() {
                 e.d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" }))
             ),
             React.createElement("h4", null, e.title),
-            React.createElement("p", null, e.desc)
+            React.createElement("p", null, e.desc),
+            e.where && React.createElement("p", { className: "event-where" }, "📍 " + e.where)
           ),
           React.createElement("div", { className: "event-countdown" },
             e.days < 0

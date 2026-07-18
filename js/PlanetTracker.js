@@ -12,7 +12,11 @@ function PlanetTracker(props) {
   const closeRef = useRef(null);
   const dateRef = useRef(null);
   const simDays = useRef(0);
+  const zoomC = useRef(1);        // zoom du gros plan (molette / pincement)
+  const pinch = useRef(null);
   const [speed, setSpeed] = useState(20);
+  // le Soleil est sélectionnable comme les planètes
+  const SUN = { name: "Soleil", sun: true, render: "sun", color: "#ffd24a", diam: 1392700, dayLen: 25.4, moons: [], rings: false, fact: "Étoile naine jaune (G2V). 99,86 % de la masse du système solaire. Température de surface ≈ 5 500 °C, cœur ≈ 15 millions °C." };
   const [selected, setSelected] = useState(NV.planets[4]); // Jupiter (montre lunes + bandes)
 
   const bgStars = useRef(null);
@@ -101,6 +105,8 @@ function PlanetTracker(props) {
       });
 
       P.drawSun(ctx, cx, cy, 11);
+      if (selected.sun) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI * 2); ctx.stroke(); }
+      canvas._hits.push({ p: SUN, x: cx, y: cy, r: 20 });
     }
 
     function drawCloseup() {
@@ -109,11 +115,13 @@ function PlanetTracker(props) {
       ctx.fillStyle = "#04050c"; ctx.fillRect(0, 0, w, h);
       starfield(ctx, w, h);
       const cx = w / 2, cy = h / 2, p = selected;
+      const phase2 = simDays.current / Math.max(0.25, p.dayLen);
+      if (p.sun) { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.34 * zoomC.current, phase2 * 0.2); return; }
       const maxMoon = p.moons.reduce((a, m) => Math.max(a, m.dist), 0);
       const extent = Math.max(maxMoon, p.rings ? 2.3 : 1.2) + 0.55;
-      const R = Math.min(Math.min(w, h) * 0.5 / extent, Math.min(w, h) * 0.32);
+      const R = Math.min(Math.min(w, h) * 0.5 / extent, Math.min(w, h) * 0.32) * zoomC.current;
       const light = { x: -0.55, y: -0.5 };
-      const phase = simDays.current / Math.max(0.25, p.dayLen);
+      const phase = phase2;
 
       const moons = p.moons.map((m, i) => {
         const ang = i * 1.7 + (simDays.current / m.period) * Math.PI * 2;
@@ -138,8 +146,15 @@ function PlanetTracker(props) {
     const canvas = mapRef.current, rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
     const hit = (canvas._hits || []).find((h) => (h.x - mx) ** 2 + (h.y - my) ** 2 < h.r * h.r);
-    if (hit) setSelected(hit.p);
+    if (hit) { setSelected(hit.p); zoomC.current = 1; }
   };
+
+  // zoom du gros plan : molette, pincement à deux doigts, double-clic pour réinitialiser
+  const cPtrs = useRef(new Map());
+  const onCloseWheel = (e) => { e.preventDefault(); zoomC.current = Math.max(0.6, Math.min(4.5, zoomC.current * (e.deltaY < 0 ? 1.15 : 0.87))); };
+  const onCloseDown = (e) => { closeRef.current.setPointerCapture(e.pointerId); cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (cPtrs.current.size === 2) { const [a, b] = [...cPtrs.current.values()]; pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomC.current }; } };
+  const onCloseMove = (e) => { if (!cPtrs.current.has(e.pointerId)) return; cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pinch.current && cPtrs.current.size >= 2) { const [a, b] = [...cPtrs.current.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); zoomC.current = Math.max(0.6, Math.min(4.5, pinch.current.z * (d / pinch.current.d))); } };
+  const onCloseUp = (e) => { cPtrs.current.delete(e.pointerId); if (cPtrs.current.size < 2) pinch.current = null; };
 
   return React.createElement("div", { className: "panel-grid" },
     React.createElement("div", { className: "planet-stage" },
@@ -152,18 +167,32 @@ function PlanetTracker(props) {
     ),
 
     React.createElement("aside", { className: "planet-info" },
-      React.createElement("canvas", { ref: closeRef, className: "closeup-canvas" }),
-      React.createElement("h3", null, pname(selected.name)),
+      React.createElement("canvas", {
+        ref: closeRef, className: "closeup-canvas",
+        onWheel: onCloseWheel, onPointerDown: onCloseDown, onPointerMove: onCloseMove,
+        onPointerUp: onCloseUp, onPointerCancel: onCloseUp,
+        onDoubleClick: () => { zoomC.current = 1; },
+      }),
+      React.createElement("h3", null, selected.sun ? "Soleil ☀️" : pname(selected.name)),
       selected.dwarf && React.createElement("span", { className: "tag" }, tr("pl_dwarf")),
       React.createElement("table", { className: "info-table" },
         React.createElement("tbody", null,
-          React.createElement("tr", null, React.createElement("td", null, tr("pl_distance")), React.createElement("td", null, selected.a + " " + tr("u_au"))),
-          React.createElement("tr", null, React.createElement("td", null, tr("pl_period")), React.createElement("td", null, selected.period < 1 ? Math.round(selected.period * 365) + " " + tr("u_days") : selected.period.toFixed(1) + " " + tr("u_years"))),
-          React.createElement("tr", null, React.createElement("td", null, tr("pl_diameter")), React.createElement("td", null, selected.diam.toLocaleString(I18N.locale()) + " " + tr("u_km"))),
-          React.createElement("tr", null, React.createElement("td", null, tr("pl_moons")), React.createElement("td", null, selected.moons.length || "—")),
-          React.createElement("tr", null, React.createElement("td", null, tr("pl_rings")), React.createElement("td", null, selected.rings ? tr("yes") : tr("no"))))),
+          selected.sun
+            ? React.createElement(React.Fragment, null,
+                React.createElement("tr", null, React.createElement("td", null, "Type"), React.createElement("td", null, "Naine jaune G2V")),
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_diameter")), React.createElement("td", null, selected.diam.toLocaleString(I18N.locale()) + " " + tr("u_km"))),
+                React.createElement("tr", null, React.createElement("td", null, "Température (surface)"), React.createElement("td", null, "≈ 5 500 °C")),
+                React.createElement("tr", null, React.createElement("td", null, "Rotation"), React.createElement("td", null, "≈ 25 " + tr("u_days"))),
+                React.createElement("tr", null, React.createElement("td", null, "Âge"), React.createElement("td", null, "4,6 Md " + tr("u_years"))))
+            : React.createElement(React.Fragment, null,
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_distance")), React.createElement("td", null, selected.a + " " + tr("u_au"))),
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_period")), React.createElement("td", null, selected.period < 1 ? Math.round(selected.period * 365) + " " + tr("u_days") : selected.period.toFixed(1) + " " + tr("u_years"))),
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_diameter")), React.createElement("td", null, selected.diam.toLocaleString(I18N.locale()) + " " + tr("u_km"))),
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_moons")), React.createElement("td", null, selected.moons.length || "—")),
+                React.createElement("tr", null, React.createElement("td", null, tr("pl_rings")), React.createElement("td", null, selected.rings ? tr("yes") : tr("no")))))),
       React.createElement("p", { className: "info-note" }, selected.fact),
       selected.moons.length > 0 && React.createElement("p", { className: "hint" }, tr("pl_moons_shown") + " " + selected.moons.map((m) => m.name).join(", ")),
+      React.createElement("p", { className: "hint" }, "🔍 Molette / pincez pour zoomer · double-clic : réinitialiser"),
       React.createElement("p", { className: "hint" }, tr("pl_hint"))
     )
   );

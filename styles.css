@@ -788,3 +788,57 @@ body {
 .aim-ico { font-size: 18px; }
 .aim-name { font-size: 12.5px; font-weight: 600; }
 .aim-desc { font-size: 10px; max-width: 230px; color: rgba(165,180,210,0.8); }
+
+/* ============================================================
+   REVUE v35 — cadre de visée, accueil langue, pollution, événements
+   ============================================================ */
+/* Nom visé : cadre élégant, discret, en bas d'écran */
+.aim-pill {
+  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+  text-align: center; pointer-events: none; z-index: 33;
+  background: rgba(6,10,24,0.55); border: 1px solid rgba(140,180,255,0.28);
+  border-radius: 999px; padding: 7px 18px; backdrop-filter: blur(14px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.45); animation: aimIn 0.2s ease;
+  max-width: 78vw;
+}
+.aim-pill-name { font-size: 13.5px; font-weight: 600; letter-spacing: 0.4px; color: #eef3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aim-pill-desc { font-size: 10px; color: rgba(165,180,210,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+/* Accueil : choix de langue plein écran */
+.welcome-overlay {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(2,3,10,0.88); backdrop-filter: blur(14px);
+}
+.welcome-card {
+  text-align: center; padding: 34px 30px; max-width: 420px; width: calc(100vw - 40px);
+  background: var(--panel-strong); border: 1px solid var(--border-bright); border-radius: 24px;
+  box-shadow: var(--shadow); animation: cardIn 0.3s ease;
+}
+.welcome-logo { font-size: 40px; text-shadow: 0 0 16px var(--accent), 0 0 34px var(--accent2); }
+.welcome-card h2 { letter-spacing: 5px; margin: 6px 0 2px; }
+.welcome-sub { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+.welcome-langs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.welcome-lang {
+  display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: 12px;
+  background: rgba(88,200,255,0.07); border: 1px solid var(--border); color: var(--text);
+  font-size: 13.5px; cursor: pointer; transition: 0.15s;
+}
+.welcome-lang:hover { border-color: var(--accent); background: rgba(88,200,255,0.16); }
+.welcome-lang.active { border-color: var(--accent); background: rgba(88,200,255,0.2); }
+.welcome-flag { font-size: 18px; }
+
+/* Pollution : estimation + explication */
+.loc-estimate { margin: 12px 0 8px; width: 100%; text-align: center; font-weight: 600; }
+.loc-result { background: rgba(88,200,255,0.07); border: 1px solid var(--border); border-radius: 12px; padding: 10px 13px; font-size: 12px; line-height: 1.5; margin-bottom: 10px; }
+.loc-result.err { color: #ffc488; border-color: var(--warn); }
+.loc-result strong { color: var(--accent); }
+.warn-txt { color: #ffc488; margin-top: 5px; }
+.ok-txt { color: #9af0c0; margin-top: 5px; }
+.loc-note { color: var(--muted); font-size: 10.5px; margin-top: 5px; font-style: italic; }
+.bortle-explain { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; margin: 10px 0 14px; }
+.bortle-explain h4 { margin-bottom: 6px; font-size: 13px; }
+.bortle-explain p { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 6px; }
+
+/* Événements : où observer + langue actus */
+.event-where { font-size: 11.5px; color: #9fd8b8; margin-top: 6px; line-height: 1.45; }
+.news-lang-row { display: flex; gap: 8px; margin-bottom: 4px; }
