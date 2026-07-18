@@ -3,7 +3,11 @@ function App() {
   const { useState, useEffect } = React;
   const I18N = window.NV_I18N;
   const tr = (k) => I18N.t(k);
-  const [tab, setTab] = useState("sky");
+  // accès direct par URL : novae/#planets, #timeline, #bortle, #events, #library
+  const [tab, setTab] = useState(() => {
+    const h = (window.location.hash || "").replace("#", "");
+    return ["sky", "planets", "timeline", "bortle", "events", "library"].includes(h) ? h : "sky";
+  });
   const [night, setNight] = useState(false);
   const [sky3d, setSky3d] = useState(false); // 2D "Sky Tonight" sky by default (3D via toggle)
   const [now, setNow] = useState(new Date());
