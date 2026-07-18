@@ -32,6 +32,8 @@ function SkyMap() {
   const aosOn = useRef(false);  // capteur quaternion actif → ignore les événements Euler
   const chBranch = useRef(null); // iOS : branche du cap boussole (avant/après verticale), avec hystérésis
   const chAnchor = useRef(null); // iOS : décalage gyro→nord ancré une fois (mouvement fluide, zéro saut)
+  const lastEvt = useRef(0);     // chien de garde : iOS coupe parfois les capteurs (rotation écran, retour d'onglet)
+  const lastReattach = useRef(0);
   // secours utilisateur : certains téléphones ont un cap inversé de 180° (capteur/coque) —
   // bascule mémorisée « N/S inversés » dans le menu ⚙
   const azFlipRef = useRef(null);
@@ -478,11 +480,17 @@ function SkyMap() {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const gs = gesture.current; if (!gs) return;
     if (gs.pinch && pointers.current.size >= 2) { const [a, b] = [...pointers.current.values()]; const dist = Math.hypot(a.x - b.x, a.y - b.y); let s = gs.scale * (dist / gs.dist); s = Math.max(initScale.current * 0.4, Math.min(initScale.current * 60, s)); view.current.scale = s; target.current.scale = s; drawRef.current(); }
-    else if (!gs.pinch) { const dx = e.clientX - gs.x, dy = e.clientY - gs.y; if (Math.abs(dx) + Math.abs(dy) > 3) gs.moved = true; const v = view.current, fct = 1 / v.scale; v.az -= (dx * fct / DEG) / Math.max(0.25, Math.cos(v.alt * DEG)); v.alt = Math.max(-30, Math.min(89, v.alt + dy * fct / DEG)); v.az = ((v.az % 360) + 360) % 360; gs.x = e.clientX; gs.y = e.clientY; target.current.az = v.az; target.current.alt = v.alt; drawRef.current(); }
+    else if (!gs.pinch) { const dx = e.clientX - gs.x, dy = e.clientY - gs.y; if (Math.abs(dx) + Math.abs(dy) > 3) gs.moved = true; const v = view.current, fct = 1 / v.scale; v.az -= (dx * fct / DEG) / Math.max(0.25, Math.cos(v.alt * DEG)); v.alt = Math.max(-89, Math.min(89, v.alt + dy * fct / DEG)); v.az = ((v.az % 360) + 360) % 360; gs.x = e.clientX; gs.y = e.clientY; target.current.az = v.az; target.current.alt = v.alt; drawRef.current(); }
   };
   const onPointerUp = (e) => {
     const gs = gesture.current;
-    if (motion) { gesture.current = null; if (gs && gs.calib && !gs.moved) selectCenter(); return; }
+    if (motion) {
+      gesture.current = null;
+      if (gs && gs.calib && !gs.moved) selectCenter();
+      // fin d'un glisser d'alignement → mémorise le calibrage définitivement
+      else if (gs && gs.calib && gs.moved) { try { localStorage.setItem("novae-calib", JSON.stringify({ az: azOffset.current, alt: altOffset.current })); } catch (e2) {} }
+      return;
+    }
     pointers.current.delete(e.pointerId);
     gesture.current = pointers.current.size === 1 ? { pinch: false, x: [...pointers.current.values()][0].x, y: [...pointers.current.values()][0].y, moved: true } : null;
     if (gs && !gs.pinch && !gs.moved) handleTap(e);
@@ -492,7 +500,8 @@ function SkyMap() {
     const mx = e.clientX - rect.left, my = e.clientY - rect.top, hit = canvas._hit || {};
     const near = (arr) => { let best = null, bd = 1e9; (arr || []).forEach((c) => { const d = (c.x - mx) ** 2 + (c.y - my) ** 2; if (d < c.r * c.r && d < bd) { bd = d; best = c; } }); return best; };
     let H;
-    if ((H = near(hit.planets))) { hudRef.current = H.data.name; setHud({ data: H.data, kind: H.kind }); setSelected(null); zoomToRaDec(H.ra, H.dec, H.kind === "sun" || H.kind === "moon" ? initScale.current * 8 : initScale.current * 14); return; }
+    // planète touchée → même fiche compacte que les étoiles (plus de panneau envahissant)
+    if ((H = near(hit.planets))) { setSelected({ kind: H.kind, data: H.data, ra: H.ra, dec: H.dec }); zoomToRaDec(H.ra, H.dec, H.kind === "sun" || H.kind === "moon" ? initScale.current * 6 : initScale.current * 10); return; }
     if (hudRef.current !== null) { hudRef.current = null; setHud(null); } // tap elsewhere closes the planet panel
     if ((H = near(hit.sat))) { setSelected({ kind: "satellite", data: H.data }); return; }
     if ((H = near(hit.ds))) { setSelected({ kind: H.kind, data: H.data, ra: H.data.ra, dec: H.data.dec }); zoomToRaDec(H.data.ra, H.data.dec, view.current.scale * 2); return; }
@@ -502,7 +511,7 @@ function SkyMap() {
     setSelected(null);
   };
 
-  const zoomToRaDec = (raDeg, decDeg, scale) => { if (!frame.current) return; const aa = AS.altaz(raDeg, decDeg, frame.current.lst, frame.current.lat); target.current.az = aa.az; target.current.alt = Math.max(2, aa.alt); target.current.scale = Math.max(initScale.current * 0.4, Math.min(initScale.current * 60, scale)); startAnim(); };
+  const zoomToRaDec = (raDeg, decDeg, scale) => { if (!frame.current) return; const aa = AS.altaz(raDeg, decDeg, frame.current.lst, frame.current.lat); target.current.az = aa.az; target.current.alt = Math.max(-85, Math.min(89, aa.alt)); target.current.scale = Math.max(initScale.current * 0.4, Math.min(initScale.current * 60, scale)); startAnim(); };
   const zoomBy = (fac) => { target.current.scale = Math.max(initScale.current * 0.4, Math.min(initScale.current * 60, target.current.scale * fac)); startAnim(); };
   const lookAt = (az, alt) => { target.current.az = az; target.current.alt = alt; startAnim(); };
   const onWheel = (e) => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.18 : 0.85); };
@@ -547,6 +556,7 @@ function SkyMap() {
       // les marquer « absolus » activait le garde-fou qui JETAIT tous les événements suivants
       // → le ciel se figeait dès l'activation du suivi (c'était LE bug de blocage).
     }
+    lastEvt.current = performance.now(); // le chien de garde sait que les capteurs vivent
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
     // We take the direction the BACK of the phone points → azimut/altitude stay
     // consistent at any tilt, so one calibration holds (no re-calibrate when you move).
@@ -558,16 +568,29 @@ function SkyMap() {
     // vrai nord = nord magnétique + déclinaison WMM (est positif)
     let az = Math.atan2(lx, ly) / DEG + magDeclRef.current; az = ((az % 360) + 360) % 360;
     const alt = Math.asin(Math.max(-1, Math.min(1, lz))) / DEG;
-    const roll = Math.atan2(-cb * sg, sb) / DEG;
+    // roulis physique + compensation de la rotation de l'écran (paysage) : même sensibilité
+    // et même sens de balayage quelle que soit l'orientation de l'interface
+    const scrA = (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === "number") ? window.screen.orientation.angle : (window.orientation || 0);
+    const roll = Math.atan2(-cb * sg, sb) / DEG + scrA;
     orient.current.az = az;
-    orient.current.alt = Math.max(-30, Math.min(89, alt));
-    orient.current.roll = Math.max(-70, Math.min(70, roll));
+    orient.current.alt = Math.max(-89, Math.min(89, alt)); // pôles célestes accessibles (plus de blocage à −30°)
+    orient.current.roll = Math.max(-90, Math.min(90, ((roll + 180) % 360) - 180));
   }, []);
   const motionLoop = useCallback(() => {
     const v = view.current, o = orient.current;
+    // chien de garde : si iOS a coupé les capteurs (rotation d'écran, retour d'onglet…),
+    // on re-branche les écouteurs — c'est LE contournement connu du gel Safari
+    const nowT = performance.now();
+    if (lastEvt.current && nowT - lastEvt.current > 1500 && nowT - lastReattach.current > 2000) {
+      lastReattach.current = nowT;
+      window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+      window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+      window.addEventListener("deviceorientation", handleOrientation, true);
+    }
     if (o.az != null) {
       const taz = ((o.az + azOffset.current + (azFlipRef.current ? 180 : 0)) % 360 + 360) % 360; // + calibrage manuel + inversion N/S éventuelle
-      const talt = Math.max(-30, Math.min(89, o.alt + altOffset.current));
+      const talt = Math.max(-89, Math.min(89, o.alt + altOffset.current));
       let d = taz - v.az; if (d > 180) d -= 360; if (d < -180) d += 360;
       // lissage adaptatif : filtre le tremblement de la boussole quand on vise (petits écarts),
       // reste réactif quand on tourne vraiment le téléphone (grands écarts)
@@ -581,7 +604,7 @@ function SkyMap() {
     // la fiche complète s'ouvre au tap (selectCenter)
     if (motionOn.current) motionRAF.current = requestAnimationFrame(motionLoop);
   }, []);
-  const recalibrate = () => { azOffset.current = 0; altOffset.current = 0; chAnchor.current = null; chBranch.current = null; };
+  const recalibrate = () => { azOffset.current = 0; altOffset.current = 0; chAnchor.current = null; chBranch.current = null; try { localStorage.removeItem("novae-calib"); } catch (e) {} };
   const selectCenter = () => {
     const canvas = canvasRef.current; if (!canvas) return; const rect = canvas.getBoundingClientRect();
     const cx = rect.width / 2, cy = rect.height / 2, hit = canvas._hit || {};
@@ -603,7 +626,9 @@ function SkyMap() {
     orient.current = { az: null, alt: null, roll: 0 };
     // repart du capteur brut : un calibrage manuel fait quand la boussole était fausse
     // resterait sinon appliqué et fausserait tout après correction
-    azOffset.current = 0; altOffset.current = 0; chBranch.current = null; chAnchor.current = null; absSeen.current = false;
+    // restaure le calibrage manuel mémorisé (aligné une fois par l'utilisateur = gardé pour toujours)
+    try { const c = JSON.parse(localStorage.getItem("novae-calib") || "null"); azOffset.current = (c && +c.az) || 0; altOffset.current = (c && +c.alt) || 0; } catch (e) { azOffset.current = 0; altOffset.current = 0; }
+    chBranch.current = null; chAnchor.current = null; absSeen.current = false;
     if (view.current.scale < initScale.current) { view.current.scale = initScale.current * 1.5; target.current.scale = view.current.scale; }
     // Android : AbsoluteOrientationSensor (quaternion fusionné gyro+magnéto+gravité) —
     // le cap le plus précis disponible, sans les ambiguïtés des angles d'Euler
@@ -622,9 +647,10 @@ function SkyMap() {
           const alt = Math.asin(Math.max(-1, Math.min(1, uz))) / DEG;
           const xz = 2 * (qx * qz - qw * qy); // composante verticale de l'axe droit → roulis écran
           aosOn.current = true;
+          lastEvt.current = performance.now();
           orient.current.az = az;
-          orient.current.alt = Math.max(-30, Math.min(89, alt));
-          orient.current.roll = Math.max(-70, Math.min(70, Math.asin(Math.max(-1, Math.min(1, xz))) / DEG));
+          orient.current.alt = Math.max(-89, Math.min(89, alt));
+          orient.current.roll = Math.max(-90, Math.min(90, Math.asin(Math.max(-1, Math.min(1, xz))) / DEG));
         });
         s.addEventListener("error", () => { aosOn.current = false; try { s.stop(); } catch (e2) {} });
         s.start();
@@ -688,14 +714,12 @@ function SkyMap() {
         }, "↔ N/S inversés" + (azFlipRef.current ? " ✓" : " ?")),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🔭 " + I18N.t("sky_layers")),
+        // Voie Lactée, ciel profond et sous-l'horizon : toujours actifs, plus de bascule
         chip(I18N.t("sky_constellations"), showLines, () => setShowLines(!showLines)),
         chip(I18N.t("sky_labels"), showLabels, () => setShowLabels(!showLabels)),
-        chip(I18N.t("sky_milkyway"), showMilkyWay, () => setShowMilkyWay(!showMilkyWay)),
         chip(I18N.t("tab_planets"), showPlanets, () => setShowPlanets(!showPlanets)),
-        chip(I18N.t("st_deepSky"), showDeepSky, () => setShowDeepSky(!showDeepSky)),
         chip("🛰 " + I18N.t("sky_satellites"), showSats, () => setShowSats(!showSats)),
         chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),
-        chip(I18N.t("sky_below"), belowHorizon, () => setBelowHorizon(!belowHorizon)),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🧭 Regarder"),
         [["N", 0, 25], ["E", 90, 25], ["S", 180, 35], ["O", 270, 25], ["Zénith", 180, 88]].map(([l, az, alt]) => React.createElement("button", { key: l, className: "jump-btn", onClick: () => lookAt(az, alt) }, l)),
