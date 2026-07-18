@@ -511,13 +511,16 @@ function SkyMap() {
     if (e.type === "deviceorientation" && absSeen.current) return;
     if (e.type === "deviceorientationabsolute") absSeen.current = true;
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
-    // iOS : alpha n'est PAS référencé au nord (décalage aléatoire à chaque session → le sud
-    // affichait l'est). webkitCompassHeading est le vrai cap boussole absolu d'iOS :
-    // on reconstruit un alpha absolu avec (360 − cap), correction standard des apps AR.
+    // iOS : alpha n'est PAS référencé au nord → on reconstruit un alpha absolu depuis
+    // webkitCompassHeading (cap boussole matériel). Ce cap mesure la projection du HAUT du
+    // téléphone : tant que le téléphone est incliné avant la verticale (cos β ≥ 0),
+    // alpha = 360 − cap ; au-delà de la verticale (on vise le ciel, le haut pointe derrière
+    // soi, cos β < 0), la projection s'inverse : alpha = 180 − cap. Sans cette 2ᵉ branche,
+    // viser le sud affichait le nord.
     let alphaDeg = e.alpha;
     const ch = e.webkitCompassHeading;
     if (typeof ch === "number" && ch >= 0 && (e.webkitCompassAccuracy == null || e.webkitCompassAccuracy >= 0)) {
-      alphaDeg = 360 - ch;
+      alphaDeg = Math.cos(e.beta * DEG) >= 0 ? 360 - ch : 180 - ch;
       absSeen.current = true; // le cap iOS est absolu : ignore les événements relatifs concurrents
     }
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
