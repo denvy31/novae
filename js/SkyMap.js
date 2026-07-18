@@ -511,10 +511,19 @@ function SkyMap() {
     if (e.type === "deviceorientation" && absSeen.current) return;
     if (e.type === "deviceorientationabsolute") absSeen.current = true;
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
+    // iOS : alpha n'est PAS référencé au nord (décalage aléatoire à chaque session → le sud
+    // affichait l'est). webkitCompassHeading est le vrai cap boussole absolu d'iOS :
+    // on reconstruit un alpha absolu avec (360 − cap), correction standard des apps AR.
+    let alphaDeg = e.alpha;
+    const ch = e.webkitCompassHeading;
+    if (typeof ch === "number" && ch >= 0 && (e.webkitCompassAccuracy == null || e.webkitCompassAccuracy >= 0)) {
+      alphaDeg = 360 - ch;
+      absSeen.current = true; // le cap iOS est absolu : ignore les événements relatifs concurrents
+    }
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
     // We take the direction the BACK of the phone points → azimut/altitude stay
     // consistent at any tilt, so one calibration holds (no re-calibrate when you move).
-    const a = e.alpha * DEG, b = e.beta * DEG, g = e.gamma * DEG;
+    const a = alphaDeg * DEG, b = e.beta * DEG, g = e.gamma * DEG;
     const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cg = Math.cos(g), sg = Math.sin(g);
     const lx = -(ca * sg + sa * sb * cg);   // back-camera direction, East component
     const ly = -(sa * sg - ca * sb * cg);   // North component
@@ -528,11 +537,14 @@ function SkyMap() {
     orient.current.roll = Math.max(-70, Math.min(70, roll));
   }, []);
   const motionLoop = useCallback(() => {
-    const v = view.current, o = orient.current, k = 0.45;
+    const v = view.current, o = orient.current;
     if (o.az != null) {
       const taz = ((o.az + azOffset.current) % 360 + 360) % 360;          // + manual calibration
       const talt = Math.max(-30, Math.min(89, o.alt + altOffset.current));
       let d = taz - v.az; if (d > 180) d -= 360; if (d < -180) d += 360;
+      // lissage adaptatif : filtre le tremblement de la boussole quand on vise (petits écarts),
+      // reste réactif quand on tourne vraiment le téléphone (grands écarts)
+      const k = Math.abs(d) < 2.5 ? 0.12 : Math.abs(d) < 8 ? 0.3 : 0.5;
       v.az = ((v.az + d * k) % 360 + 360) % 360;
       v.alt += (talt - v.alt) * k;
       v.roll += ((o.roll || 0) - v.roll) * 0.2;  // gentler: gamma is noisy near vertical
