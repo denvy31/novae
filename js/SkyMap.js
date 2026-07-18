@@ -543,7 +543,9 @@ function SkyMap() {
         chAnchor.current = ((chAnchor.current + d * 0.02) % 360 + 360) % 360;
       }
       alphaDeg = e.alpha + chAnchor.current;
-      absSeen.current = true; // le cap iOS est absolu : ignore les événements relatifs concurrents
+      // NE PAS marquer absSeen ici : sur iPhone les événements sont de type "deviceorientation" —
+      // les marquer « absolus » activait le garde-fou qui JETAIT tous les événements suivants
+      // → le ciel se figeait dès l'activation du suivi (c'était LE bug de blocage).
     }
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
     // We take the direction the BACK of the phone points → azimut/altitude stay
@@ -601,7 +603,7 @@ function SkyMap() {
     orient.current = { az: null, alt: null, roll: 0 };
     // repart du capteur brut : un calibrage manuel fait quand la boussole était fausse
     // resterait sinon appliqué et fausserait tout après correction
-    azOffset.current = 0; altOffset.current = 0; chBranch.current = null; chAnchor.current = null;
+    azOffset.current = 0; altOffset.current = 0; chBranch.current = null; chAnchor.current = null; absSeen.current = false;
     if (view.current.scale < initScale.current) { view.current.scale = initScale.current * 1.5; target.current.scale = view.current.scale; }
     // Android : AbsoluteOrientationSensor (quaternion fusionné gyro+magnéto+gravité) —
     // le cap le plus précis disponible, sans les ambiguïtés des angles d'Euler
