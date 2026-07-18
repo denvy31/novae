@@ -780,3 +780,11 @@ body {
 .aim-ico { font-size: 26px; filter: drop-shadow(0 1px 5px rgba(0,0,0,0.8)); }
 .aim-name { font-size: 15px; font-weight: 600; letter-spacing: 0.4px; color: rgba(240,246,255,0.95); }
 .aim-desc { font-size: 11px; color: rgba(180,195,225,0.85); max-width: 270px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Étiquette de visée : version compacte et discrète */
+.aim-label { bottom: 20px; }
+.aim-label.rich { gap: 8px; opacity: 0.92; }
+.aim-thumb { width: 26px; height: 26px; }
+.aim-ico { font-size: 18px; }
+.aim-name { font-size: 12.5px; font-weight: 600; }
+.aim-desc { font-size: 10px; max-width: 230px; color: rgba(165,180,210,0.8); }

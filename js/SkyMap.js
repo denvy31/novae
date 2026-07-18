@@ -28,6 +28,9 @@ function SkyMap() {
   const azOffset = useRef(0);   // manual calibration (azimuth)
   const altOffset = useRef(0);  // manual calibration (altitude)
   const magDeclRef = useRef(0); // déclinaison magnétique WMM (° est, 0 hors-ligne)
+  const aosRef = useRef(null);  // AbsoluteOrientationSensor (Android : quaternion précis)
+  const aosOn = useRef(false);  // capteur quaternion actif → ignore les événements Euler
+  const chBranch = useRef(null); // iOS : branche du cap boussole (avant/après verticale), avec hystérésis
   const hoverRef = useRef(null); // hover tooltip element
   const hoveredConst = useRef(-1); // constellation under the cursor / reticle
   const previewRef = useRef(null); // planet icon preview element
@@ -40,10 +43,10 @@ function SkyMap() {
   const [showLabels, setShowLabels] = useState(true);
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showPlanets, setShowPlanets] = useState(true);
-  const [showDeepSky, setShowDeepSky] = useState(false);
+  const [showDeepSky, setShowDeepSky] = useState(true);   // actif d'office (désactivable dans ⚙)
   const [showSats, setShowSats] = useState(true);
   const [snFilter, setSnFilter] = useState(false);
-  const [belowHorizon, setBelowHorizon] = useState(false);
+  const [belowHorizon, setBelowHorizon] = useState(true); // actif d'office (désactivable dans ⚙)
   const [motion, setMotion] = useState(false);
   const [motionMsg, setMotionMsg] = useState("");
   const [askFollow, setAskFollow] = useState(false); // iOS : bouton d'activation (geste requis)
@@ -331,13 +334,12 @@ function SkyMap() {
 
     if (v.roll) ctx.restore();
 
-    // repère central épuré : un simple point lumineux (remplace l'ancienne cible à croisillons)
+    // repère central : un point pur, rien d'autre (liseré sombre fin pour rester visible)
     if (motion) {
-      const dg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, 9);
-      dg.addColorStop(0, "rgba(255,255,255,0.35)"); dg.addColorStop(1, "transparent");
-      ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(w / 2, h / 2, 9, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(w / 2, h / 2, 2.6, 0, 7); ctx.stroke();
       ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.beginPath(); ctx.arc(w / 2, h / 2, 2.2, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(w / 2, h / 2, 2, 0, 7); ctx.fill();
       // objet visé : conserve type + données pour l'étiquette enrichie (image + explication)
       const all = [].concat(
         planetHit.map((p) => ({ x: p.x, y: p.y, name: p.data.name, kind: p.kind, data: p.data })),
@@ -507,20 +509,23 @@ function SkyMap() {
 
   // ---- device orientation: sensor updates a target; a 60 fps loop eases the view (smooth follow) ----
   const handleOrientation = useCallback((e) => {
+    if (aosOn.current) return; // le capteur quaternion (plus précis) a la priorité
     // avoid the relative/absolute conflict that makes the compass jitter
     if (e.type === "deviceorientation" && absSeen.current) return;
     if (e.type === "deviceorientationabsolute") absSeen.current = true;
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
     // iOS : alpha n'est PAS référencé au nord → on reconstruit un alpha absolu depuis
     // webkitCompassHeading (cap boussole matériel). Ce cap mesure la projection du HAUT du
-    // téléphone : tant que le téléphone est incliné avant la verticale (cos β ≥ 0),
-    // alpha = 360 − cap ; au-delà de la verticale (on vise le ciel, le haut pointe derrière
-    // soi, cos β < 0), la projection s'inverse : alpha = 180 − cap. Sans cette 2ᵉ branche,
-    // viser le sud affichait le nord.
+    // téléphone : avant la verticale (cos β ≥ 0) alpha = 360 − cap ; au-delà (visée vers le
+    // ciel, cos β < 0) la projection s'inverse : alpha = 180 − cap. Une HYSTÉRÉSIS fige la
+    // branche autour de la verticale (|cos β| < 0.12) : sans elle, le bruit du capteur faisait
+    // basculer le ciel de 180° quand on visait près de l'horizon (le « bug de mouvement »).
     let alphaDeg = e.alpha;
     const ch = e.webkitCompassHeading;
     if (typeof ch === "number" && ch >= 0 && (e.webkitCompassAccuracy == null || e.webkitCompassAccuracy >= 0)) {
-      alphaDeg = Math.cos(e.beta * DEG) >= 0 ? 360 - ch : 180 - ch;
+      const cb2 = Math.cos(e.beta * DEG);
+      if (Math.abs(cb2) >= 0.12 || chBranch.current == null) chBranch.current = cb2 >= 0;
+      alphaDeg = chBranch.current ? 360 - ch : 180 - ch;
       absSeen.current = true; // le cap iOS est absolu : ignore les événements relatifs concurrents
     }
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
@@ -570,14 +575,43 @@ function SkyMap() {
     if ((H = near(hit.named))) return setSelected({ kind: "star", data: H.s, ra: H.s.ra, dec: H.s.dec });
     if ((H = near(hit.stars))) return setSelected({ kind: "anon", data: Object.assign({ name: "Étoile (catalogue)" }, H.s), ra: H.s.ra, dec: H.s.dec });
   };
-  const stopMotion = useCallback(() => { motionOn.current = false; cancelAnimationFrame(motionRAF.current); view.current.roll = 0; hoveredConst.current = -1; centerPlanetRef.current = null; if (hudRef.current !== null) { hudRef.current = null; setHud(null); } if (previewRef.current) previewRef.current.style.display = "none"; window.removeEventListener("deviceorientationabsolute", handleOrientation, true); window.removeEventListener("deviceorientation", handleOrientation, true); setMotion(false); setAim(null); reticleRef.current = null; drawRef.current(); }, [handleOrientation]);
+  const stopMotion = useCallback(() => { motionOn.current = false; cancelAnimationFrame(motionRAF.current); view.current.roll = 0; hoveredConst.current = -1; centerPlanetRef.current = null; if (hudRef.current !== null) { hudRef.current = null; setHud(null); } if (previewRef.current) previewRef.current.style.display = "none"; if (aosRef.current) { try { aosRef.current.stop(); } catch (e) {} aosRef.current = null; } aosOn.current = false; window.removeEventListener("deviceorientationabsolute", handleOrientation, true); window.removeEventListener("deviceorientation", handleOrientation, true); setMotion(false); setAim(null); reticleRef.current = null; drawRef.current(); }, [handleOrientation]);
   const startMotion = useCallback(async () => {
     const DOE = window.DeviceOrientationEvent;
     if (!DOE) { setMotionMsg("Capteur d'orientation indisponible — ouvrez Novaé sur un téléphone."); return; }
     try { if (typeof DOE.requestPermission === "function") { const r = await DOE.requestPermission(); if (r !== "granted") { setMotionMsg("Permission de mouvement refusée."); return; } } }
     catch (e) { setMotionMsg("Le mode mouvement nécessite HTTPS sur mobile."); return; }
     orient.current = { az: null, alt: null, roll: 0 };
+    // repart du capteur brut : un calibrage manuel fait quand la boussole était fausse
+    // resterait sinon appliqué et fausserait tout après correction
+    azOffset.current = 0; altOffset.current = 0; chBranch.current = null;
     if (view.current.scale < initScale.current) { view.current.scale = initScale.current * 1.5; target.current.scale = view.current.scale; }
+    // Android : AbsoluteOrientationSensor (quaternion fusionné gyro+magnéto+gravité) —
+    // le cap le plus précis disponible, sans les ambiguïtés des angles d'Euler
+    aosOn.current = false;
+    if (window.AbsoluteOrientationSensor) {
+      try {
+        const s = new AbsoluteOrientationSensor({ frequency: 30 });
+        s.addEventListener("reading", () => {
+          const q = s.quaternion; if (!q) return;
+          const qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+          // direction du dos du téléphone (0,0,−1) exprimée en repère Terre (X est, Y nord, Z haut)
+          const ex = -2 * (qw * qy + qx * qz);
+          const ny = 2 * (qw * qx - qy * qz);
+          const uz = 2 * (qx * qx + qy * qy) - 1;
+          let az = Math.atan2(ex, ny) / DEG + magDeclRef.current; az = ((az % 360) + 360) % 360;
+          const alt = Math.asin(Math.max(-1, Math.min(1, uz))) / DEG;
+          const xz = 2 * (qx * qz - qw * qy); // composante verticale de l'axe droit → roulis écran
+          aosOn.current = true;
+          orient.current.az = az;
+          orient.current.alt = Math.max(-30, Math.min(89, alt));
+          orient.current.roll = Math.max(-70, Math.min(70, Math.asin(Math.max(-1, Math.min(1, xz))) / DEG));
+        });
+        s.addEventListener("error", () => { aosOn.current = false; try { s.stop(); } catch (e2) {} });
+        s.start();
+        aosRef.current = s;
+      } catch (e2) { aosOn.current = false; }
+    }
     window.addEventListener("deviceorientationabsolute", handleOrientation, true);
     window.addEventListener("deviceorientation", handleOrientation, true);
     setMotion(true); setMotionMsg("");
