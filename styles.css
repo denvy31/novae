@@ -919,3 +919,27 @@ body {
 .tour-dots { margin: 0; }
 .tour-txt { font-size: 13px; line-height: 1.55; color: var(--text); }
 .tour-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+
+/* La petite main de la visite guidée : glisse vers chaque élément et « tape » dessus */
+.tour-hand {
+  position: fixed; z-index: 86; font-size: 34px; pointer-events: none;
+  transform: translate(-30%, 6px);
+  transition: left 0.9s cubic-bezier(0.3, 0.8, 0.3, 1), top 0.9s cubic-bezier(0.3, 0.8, 0.3, 1);
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.8));
+  animation: handTap 1.5s ease-in-out infinite;
+}
+@keyframes handTap {
+  0%, 100% { margin-top: 10px; }
+  45% { margin-top: -2px; }
+  55% { margin-top: -2px; }
+}
+.tour-hand-ring {
+  position: absolute; left: 6px; top: -12px; width: 26px; height: 26px;
+  border: 2px solid rgba(88,200,255,0.9); border-radius: 50%;
+  animation: handRing 1.5s ease-out infinite;
+}
+@keyframes handRing {
+  0%, 40% { transform: scale(0.4); opacity: 0; }
+  55% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(1.7); opacity: 0; }
+}

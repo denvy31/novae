@@ -67,6 +67,9 @@ function TimelinePanel() {
         return { x: r(), y: r(), sz: 0.3 + r() * 1.3, b: 0.25 + r() * 0.75, ph: r() * Math.PI * 2, c, big: r() < 0.05 };
       }),
       band: mk(900, (r) => ({ u: r(), v: (r() + r() + r() - 1.5) * 0.06, b: 0.2 + r() * 0.6 })),
+      // Big Bang façon NASA SVS : filaments courbes qui s'échappent + grumeaux de plasma turbulent
+      fil: mk(18, (r) => ({ a: r() * Math.PI * 2, curve: (r() - 0.5) * 1.6, len: 0.8 + r() * 0.9, wd: 1.5 + r() * 3, ph: r() * Math.PI * 2 })),
+      clump: mk(90, (r) => ({ a: r() * Math.PI * 2, d0: 0.15 + r() * 0.85, sz: 0.5 + r() * 1.6, warm: r(), ph: r() * Math.PI * 2 })),
     };
   }, []);
 
@@ -81,29 +84,65 @@ function TimelinePanel() {
 
     // Une scène par époque — dessinée avec alpha pour le fondu enchaîné
     const scenes = [
-      // 0 — Big Bang : flash central + ondes de choc en expansion (rendu additif)
+      // 0 — Big Bang façon NASA SVS : point de lumière aveuglant, plasma doré turbulent qui
+      // s'échappe, filaments courbes, ondes de choc, bord bleuté — rendu additif photo
       (ctx, w, h, tm, a) => {
         ctx.globalAlpha = a;
-        const cx = w / 2, cy = h / 2, pulse = 1 + Math.sin(tm * 2.2) * 0.1;
-        const R = Math.min(w, h) * 0.3 * pulse;
+        const cx = w / 2, cy = h / 2, pulse = 1 + Math.sin(tm * 2.2) * 0.06;
+        const R = Math.min(w, h) * 0.28 * pulse;
         ctx.save(); ctx.globalCompositeOperation = "lighter";
-        // ondes de choc concentriques qui s'échappent en boucle
+        // 1) grumeaux de plasma turbulent expulsés du cœur (dérive lente vers l'extérieur, en boucle)
+        parts.clump.forEach((p) => {
+          const drift = ((p.d0 + tm * 0.055) % 1);
+          const d = (0.35 + drift * 1.7) * R;
+          const wob = Math.sin(tm * 1.2 + p.ph) * R * 0.04;
+          const x = cx + Math.cos(p.a) * d + wob, y = cy + Math.sin(p.a) * d - wob;
+          const fade = (1 - drift) * 0.35;
+          spr(ctx, p.warm > 0.35 ? SPR.warm : SPR.hot, x, y, p.sz * R * 0.16, a * fade);
+        });
+        // 2) filaments courbes effilés (l'aspect « explosion filamenteuse » des rendus NASA)
+        parts.fil.forEach((p, i) => {
+          const an = p.a + tm * 0.06, breathe = 1 + 0.12 * Math.sin(tm * 1.6 + p.ph);
+          const r0 = R * 0.4, r1 = R * (0.9 + p.len) * breathe;
+          const mx = cx + Math.cos(an + p.curve * 0.3) * (r0 + r1) * 0.5;
+          const my = cy + Math.sin(an + p.curve * 0.3) * (r0 + r1) * 0.5;
+          const x0 = cx + Math.cos(an) * r0, y0 = cy + Math.sin(an) * r0;
+          const x1 = cx + Math.cos(an + p.curve * 0.55) * r1, y1 = cy + Math.sin(an + p.curve * 0.55) * r1;
+          for (let s2 = 0; s2 < 3; s2++) {
+            ctx.strokeStyle = s2 === 0 ? "rgba(255,240,210," + (0.34 * a).toFixed(3) + ")" : s2 === 1 ? "rgba(255,185,100," + (0.22 * a).toFixed(3) + ")" : "rgba(160,120,255," + (0.1 * a).toFixed(3) + ")";
+            ctx.lineWidth = Math.max(0.6, p.wd * (1 - s2 * 0.3) * (i % 3 === 0 ? 1.4 : 1));
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.stroke();
+          }
+        });
+        // 3) ondes de choc concentriques
         for (let k = 0; k < 3; k++) {
-          const ph = ((tm * 0.35 + k / 3) % 1);
-          const rr = R * (0.6 + ph * 2.2), al = (1 - ph) * 0.3 * a;
-          ctx.strokeStyle = "rgba(255,190,120," + al.toFixed(3) + ")";
-          ctx.lineWidth = 2.5 - ph * 1.8;
+          const ph = ((tm * 0.3 + k / 3) % 1);
+          const rr = R * (0.7 + ph * 2.4), al = (1 - ph) * 0.26 * a;
+          ctx.strokeStyle = "rgba(200,190,255," + al.toFixed(3) + ")";
+          ctx.lineWidth = 2.2 - ph * 1.6;
           ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke();
         }
-        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-        g.addColorStop(0, "#ffffff"); g.addColorStop(0.25, "#ffe9b0"); g.addColorStop(0.6, "rgba(255,140,60,0.5)"); g.addColorStop(1, "transparent");
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
-        // reflet d'objectif horizontal (rendu photo d'une source aveuglante)
-        const flare = ctx.createLinearGradient(cx - R * 2.6, cy, cx + R * 2.6, cy);
-        flare.addColorStop(0, "transparent"); flare.addColorStop(0.5, "rgba(255,235,200," + (0.4 * a).toFixed(3) + ")"); flare.addColorStop(1, "transparent");
-        ctx.fillStyle = flare; ctx.fillRect(cx - R * 2.6, cy - Math.max(1.5, R * 0.03), R * 5.2, Math.max(3, R * 0.06));
-        ctx.globalAlpha = a * 0.5; ctx.strokeStyle = "rgba(255,225,170,0.6)"; ctx.lineWidth = 1.2;
-        for (let i = 0; i < 12; i++) { const an = (i / 12) * Math.PI * 2 + tm * 0.2; const L1 = R * (1.05 + 0.18 * Math.sin(tm * 3 + i)); ctx.beginPath(); ctx.moveTo(cx + Math.cos(an) * R * 0.45, cy + Math.sin(an) * R * 0.45); ctx.lineTo(cx + Math.cos(an) * L1, cy + Math.sin(an) * L1); ctx.stroke(); }
+        // 4) cœur : point aveuglant blanc-bleu → or → orange, bord violet (chromatisme photo)
+        const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.5);
+        halo.addColorStop(0, "rgba(255,255,255,0.95)"); halo.addColorStop(0.14, "rgba(255,246,220,0.9)");
+        halo.addColorStop(0.34, "rgba(255,200,110,0.55)"); halo.addColorStop(0.62, "rgba(255,130,55,0.25)");
+        halo.addColorStop(0.85, "rgba(140,90,255,0.1)"); halo.addColorStop(1, "transparent");
+        ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, R * 1.5, 0, 7); ctx.fill();
+        const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.18);
+        core.addColorStop(0, "#ffffff"); core.addColorStop(0.6, "#eef2ff"); core.addColorStop(1, "transparent");
+        ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, R * 0.18, 0, 7); ctx.fill();
+        // 5) aigrettes 6 branches + reflet anamorphique horizontal (source aveuglante à la caméra)
+        for (let i = 0; i < 6; i++) {
+          const an = (i / 6) * Math.PI + tm * 0.03;
+          const L1 = R * (1.7 + 0.25 * Math.sin(tm * 2 + i));
+          const sg2 = ctx.createLinearGradient(cx - Math.cos(an) * L1, cy - Math.sin(an) * L1, cx + Math.cos(an) * L1, cy + Math.sin(an) * L1);
+          sg2.addColorStop(0, "transparent"); sg2.addColorStop(0.5, "rgba(255,250,235," + (0.5 * a).toFixed(3) + ")"); sg2.addColorStop(1, "transparent");
+          ctx.strokeStyle = sg2; ctx.lineWidth = i % 2 ? 1 : 2;
+          ctx.beginPath(); ctx.moveTo(cx - Math.cos(an) * L1, cy - Math.sin(an) * L1); ctx.lineTo(cx + Math.cos(an) * L1, cy + Math.sin(an) * L1); ctx.stroke();
+        }
+        const flare = ctx.createLinearGradient(cx - R * 3, cy, cx + R * 3, cy);
+        flare.addColorStop(0, "transparent"); flare.addColorStop(0.5, "rgba(200,215,255," + (0.5 * a).toFixed(3) + ")"); flare.addColorStop(1, "transparent");
+        ctx.fillStyle = flare; ctx.fillRect(cx - R * 3, cy - Math.max(1.5, R * 0.025), R * 6, Math.max(3, R * 0.05));
         ctx.restore();
       },
       // 1 — Soupe de particules : plasma incandescent (rendu additif, cœur brûlant)
