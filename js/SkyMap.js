@@ -552,23 +552,23 @@ function SkyMap() {
     // du GYROSCOPE (alpha relatif : fluide, 60 Hz, zéro saut) ; la boussole ne sert qu'à CALER
     // ce gyroscope sur le nord une fois au départ, puis à corriger sa dérive très doucement.
     // Fini les à-coups et les bascules de 180° qu'donnait la boussole utilisée en continu.
+    // ANCRAGE UNIQUE : la boussole ne sert qu'UNE fois, pour caler le gyroscope au démarrage
+    // (dans une attitude où elle est fiable). Ensuite : gyroscope pur — stable par construction.
+    // L'ancienne « correction de dérive » continue faisait tourner le ciel n'importe comment
+    // quand la boussole changeait de régime (près de la verticale) : supprimée.
     let alphaDeg = e.alpha;
     const ch = e.webkitCompassHeading;
     if (typeof ch === "number" && ch >= 0 && (e.webkitCompassAccuracy == null || e.webkitCompassAccuracy >= 0)) {
-      const cb2 = Math.cos(e.beta * DEG);
-      if (Math.abs(cb2) >= 0.12 || chBranch.current == null) chBranch.current = cb2 >= 0;
-      const chAlpha = chBranch.current ? 360 - ch : 180 - ch;   // alpha absolu instantané (bruité)
-      const inst = ((chAlpha - e.alpha) % 360 + 360) % 360;      // décalage gyro→nord mesuré
-      if (chAnchor.current == null) chAnchor.current = inst;     // ancrage initial
-      else if (Math.abs(cb2) > 0.25) {
-        // correction de dérive lente, uniquement quand la boussole est fiable (loin de la verticale)
-        let d = ((inst - chAnchor.current + 540) % 360) - 180;
-        chAnchor.current = ((chAnchor.current + d * 0.02) % 360 + 360) % 360;
+      if (chAnchor.current == null) {
+        const cb2 = Math.cos(e.beta * DEG);
+        if (Math.abs(cb2) >= 0.35) {                             // attitude franche = boussole fiable
+          const chAlpha = cb2 >= 0 ? 360 - ch : 180 - ch;        // alpha absolu à cet instant
+          chAnchor.current = ((chAlpha - e.alpha) % 360 + 360) % 360;
+        }
       }
-      alphaDeg = e.alpha + chAnchor.current;
-      // NE PAS marquer absSeen ici : sur iPhone les événements sont de type "deviceorientation" —
-      // les marquer « absolus » activait le garde-fou qui JETAIT tous les événements suivants
-      // → le ciel se figeait dès l'activation du suivi (c'était LE bug de blocage).
+      if (chAnchor.current != null) alphaDeg = e.alpha + chAnchor.current;
+      // NE PAS marquer absSeen ici (les événements iPhone sont de type "deviceorientation" ;
+      // les marquer « absolus » gelait tout — bug corrigé en v37).
     }
     lastEvt.current = performance.now(); // le chien de garde sait que les capteurs vivent
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.

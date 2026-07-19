@@ -1,11 +1,14 @@
 /* Novaé — Accueil : explosion supernova + Bienvenue + choix de langue + tutoriel simple.
    mode "full" (premier lancement) : boom → langue → tuto. mode "lang" (bouton 🌐) : langue seule. */
 function Onboarding({ mode, lang, onLang, onDone }) {
+  // mode "full" : boom → langue → tuto (1er lancement) · "boom" : explosion seule (chaque
+  // ouverture) · "lang" : sélecteur de langue seul (bouton 🌐)
   const { useState, useRef, useEffect } = React;
   const I18N = window.NV_I18N;
-  const [phase, setPhase] = useState(mode === "full" ? "boom" : "lang");
+  const [phase, setPhase] = useState(mode === "lang" ? "lang" : "boom");
   const [slide, setSlide] = useState(0);
   const cvs = useRef(null);
+  const afterBoom = () => { if (mode === "full") setPhase("lang"); else onDone(); };
 
   // ---- Supernova : flash + onde de choc + particules incandescentes (Canvas, additif) ----
   useEffect(() => {
@@ -62,8 +65,8 @@ function Onboarding({ mode, lang, onLang, onDone }) {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    // enchaîne sur le choix de langue
-    const tm = setTimeout(() => { if (mounted) setPhase("lang"); }, 3400);
+    // enchaîne (langue au 1er lancement, sinon entre dans l'app)
+    const tm = setTimeout(() => { if (mounted) afterBoom(); }, 3400);
     return () => { mounted = false; cancelAnimationFrame(raf); clearTimeout(tm); };
   }, [phase]);
 
@@ -88,7 +91,7 @@ function Onboarding({ mode, lang, onLang, onDone }) {
         React.createElement("div", { className: "boom-logo" }, "✦"),
         React.createElement("h1", null, "NOVAÉ"),
         React.createElement("p", null, "Bienvenue · Welcome"),
-        React.createElement("button", { className: "chip boom-skip", onClick: () => setPhase("lang") }, "Passer →"))),
+        React.createElement("button", { className: "chip boom-skip", onClick: afterBoom }, "Passer →"))),
 
     phase === "lang" && React.createElement("div", { className: "welcome-card" },
       React.createElement("div", { className: "welcome-logo" }, "✦"),
