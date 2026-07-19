@@ -50,6 +50,11 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+      // mise à jour instantanée : dès qu'une nouvelle version prend le contrôle, on recharge
+      // une fois — fini le « fermer/rouvrir deux fois » pour voir les nouveautés
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (!window.__nvReloaded) { window.__nvReloaded = true; location.reload(); }
+      });
     }
   </script>
 </body>

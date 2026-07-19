@@ -1,5 +1,5 @@
 /* Novaé — service worker (installable + offline app shell) */
-const CACHE = "novae-v42";
+const CACHE = "novae-v43";
 const SHELL = [
   "./", "index.html", "styles.css",
   "lib/react.production.min.js", "lib/react-dom.production.min.js",
@@ -11,7 +11,9 @@ const SHELL = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()).catch(() => {}));
+  // cache: "reload" force le réseau (ignore le cache HTTP navigateur) → les mises à jour
+  // embarquent toujours les fichiers réellement à jour
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()).catch(() => {}));
 });
 
 self.addEventListener("activate", (e) => {
