@@ -8,6 +8,7 @@ function TimelinePanel() {
   const sliderVal = useRef(1000); // 0 = Big Bang, 1000 = présent
   const raf = useRef(0);
   const [eraIdx, setEraIdx] = useState(7);
+  const [showOrigin, setShowOrigin] = useState(false); // « Qu'est-ce qui a créé le Big Bang ? »
 
   // Époques (chronologiques) — contenu FR par défaut, EN si langue anglaise
   const ERAS = useMemo(() => {
@@ -317,12 +318,26 @@ function TimelinePanel() {
       const i0 = Math.max(0, Math.min(N - 1, Math.floor(f))), blend = f - i0, i1 = Math.min(N - 1, i0 + 1);
 
       const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, "#04060f"); g.addColorStop(1, "#0a1226");
+      g.addColorStop(0, "#010208"); g.addColorStop(1, "#060b18");
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      // fond étoilé permanent (profondeur), sauf avant la première lumière
+      if (f > 2.6) {
+        const bgA = Math.min(1, (f - 2.6) / 0.8);
+        parts.sky.forEach((p, i2) => {
+          if (i2 % 2) return;
+          ctx.globalAlpha = bgA * p.b * 0.35;
+          ctx.fillStyle = p.c;
+          ctx.fillRect(p.x * w, p.y * h, 1, 1);
+        });
+        ctx.globalAlpha = 1;
+      }
 
       scenes[i0](ctx, w, h, tm, 1 - blend);
       if (i1 !== i0 && blend > 0.01) scenes[i1](ctx, w, h, tm, blend);
-      ctx.globalAlpha = 1;
+      // vignette photo : assombrit doucement les bords (rendu cinéma)
+      const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.75);
+      vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,0.42)");
+      ctx.globalAlpha = 1; ctx.fillStyle = vg; ctx.fillRect(0, 0, w, h);
       raf.current = requestAnimationFrame(loop);
     };
     raf.current = requestAnimationFrame(loop);
@@ -363,6 +378,22 @@ function TimelinePanel() {
       React.createElement("p", { className: "tl-show" }, "👁 " + L("Ce que montre Novaé : ", "What Novaé shows: ") + era.show)),
     React.createElement("p", { className: "tl-note" },
       L("Note scientifique — on ne peut pas « filmer » le Big Bang : pendant ses 380 000 premières années, l'Univers était opaque. La première lumière observable est le fond diffus cosmologique. Novaé présente donc l'histoire de l'Univers comme une chronologie commentée.",
-        "Science note — the Big Bang cannot be “filmed”: for its first 380,000 years the universe was opaque. The first observable light is the cosmic microwave background. Novaé therefore presents the history of the universe as an annotated chronology."))
+        "Science note — the Big Bang cannot be “filmed”: for its first 380,000 years the universe was opaque. The first observable light is the cosmic microwave background. Novaé therefore presents the history of the universe as an annotated chronology.")),
+
+    // Qu'est-ce qui a créé le Big Bang ? — explication progressive, sourcée
+    React.createElement("button", { className: "chip tl-origin-btn" + (showOrigin ? " on" : ""), onClick: () => setShowOrigin(!showOrigin) },
+      "💥 Qu'est-ce qui a créé le Big Bang ? " + (showOrigin ? "▾" : "▸")),
+    showOrigin && React.createElement("div", { className: "tl-origin" },
+      [
+        ["1️⃣", "Ce que l'on SAIT", "L'Univers était il y a 13,8 milliards d'années dans un état extrêmement dense et chaud, et il est en expansion depuis — mesuré par la fuite des galaxies (Hubble, 1929) et confirmé par le fond diffus cosmologique découvert en 1965. Ça, ce sont des observations solides."],
+        ["2️⃣", "L'inflation cosmique", "Juste « avant » le Big Bang chaud, l'espace aurait subi une expansion fulgurante : l'inflation. En une fraction infime de seconde, l'Univers aurait grossi d'un facteur gigantesque. Quand l'inflation s'arrête, toute son énergie se déverse en matière et en lumière : c'est ce déversement qui EST le Big Bang chaud."],
+        ["3️⃣", "L'empreinte quantique", "Pendant l'inflation, d'infimes fluctuations quantiques — des tremblements du vide — ont été étirées à des tailles cosmiques. On les voit encore : ce sont les taches chaudes et froides du fond diffus, et elles ont donné naissance aux galaxies. Les mesures collent remarquablement aux prédictions."],
+        ["4️⃣", "Ce que l'on ne sait PAS", "Qu'y avait-il « avant » ? D'où vient l'énergie de l'inflation ? À l'instant zéro, nos lois physiques (relativité + quantique) cessent d'être valables — c'est le « mur de Planck ». Fluctuation quantique née « de rien », rebond d'un univers précédent, multivers : hypothèses sérieuses, mais aucune n'est encore testable. La science honnête s'arrête ici — pour l'instant."],
+      ].map((c, i) => React.createElement("div", { key: i, className: "tl-origin-card" },
+        React.createElement("span", { className: "tl-origin-num" }, c[0]),
+        React.createElement("div", null,
+          React.createElement("h4", null, c[1]),
+          React.createElement("p", null, c[2])))),
+      React.createElement("p", { className: "tl-origin-src" }, "Sources : NASA (théorie du Big Bang et inflation), observations du fond diffus cosmologique (COBE, WMAP, Planck), Guth (1981) — vulgarisé."))
   );
 }

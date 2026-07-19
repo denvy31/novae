@@ -12,7 +12,8 @@ function App() {
   const [now, setNow] = useState(new Date());
   const [lang, setLangState] = useState(I18N.get());
   // premier lancement : on demande sa langue à l'utilisateur (modal plein écran, pas de menu déroulant)
-  const [askLang, setAskLang] = useState(() => { try { return !localStorage.getItem("novae-lang"); } catch (e) { return false; } });
+  // premier lancement : supernova → Bienvenue → langue → tutoriel ; bouton 🌐 : langue seule
+  const [onboard, setOnboard] = useState(() => { try { return !localStorage.getItem("novae-lang") ? "full" : null; } catch (e) { return null; } });
 
   // Horloge « ce soir » mise à jour régulièrement (signature Sky Tonight)
   useEffect(() => {
@@ -23,7 +24,6 @@ function App() {
   const chooseLang = (code) => {
     I18N.setLang(code);
     setLangState(code);
-    setAskLang(false);
   };
   const loc = I18N.locale();
   const dateLabel = now.toLocaleDateString(loc, {
@@ -84,7 +84,7 @@ function App() {
         "button",
         {
           className: "lang-btn",
-          onClick: () => setAskLang(true),
+          onClick: () => setOnboard("lang"),
           title: tr("lang_label"),
           "aria-label": tr("lang_label"),
         },
@@ -135,34 +135,13 @@ function App() {
       ),
     ),
 
-    // Sélecteur de langue plein écran (premier lancement + bouton 🌐)
-    askLang &&
-      React.createElement(
-        "div",
-        { className: "welcome-overlay" },
-        React.createElement(
-          "div",
-          { className: "welcome-card" },
-          React.createElement("div", { className: "welcome-logo" }, "✦"),
-          React.createElement("h2", null, "NOVAÉ"),
-          React.createElement("p", { className: "welcome-sub" }, "Choisissez votre langue · Choose your language"),
-          React.createElement(
-            "div",
-            { className: "welcome-langs" },
-            I18N.langs.map((l) =>
-              React.createElement(
-                "button",
-                {
-                  key: l.code,
-                  className: "welcome-lang" + (l.code === lang ? " active" : ""),
-                  onClick: () => chooseLang(l.code),
-                },
-                React.createElement("span", { className: "welcome-flag" }, l.flag),
-                React.createElement("span", null, l.name),
-              ),
-            ),
-          ),
-        ),
-      ),
+    // Accueil : supernova + Bienvenue + langue + tutoriel (premier lancement) ; 🌐 : langue seule
+    onboard &&
+      React.createElement(Onboarding, {
+        mode: onboard,
+        lang,
+        onLang: chooseLang,
+        onDone: () => setOnboard(null),
+      }),
   );
 }

@@ -513,8 +513,9 @@ function SkyMap() {
     const mx = e.clientX - rect.left, my = e.clientY - rect.top, hit = canvas._hit || {};
     const near = (arr) => { let best = null, bd = 1e9; (arr || []).forEach((c) => { const d = (c.x - mx) ** 2 + (c.y - my) ** 2; if (d < c.r * c.r && d < bd) { bd = d; best = c; } }); return best; };
     let H;
-    // planète touchée → fiche compacte, SANS zoom (le zoom géant donnait l'impression d'être coincé)
-    if ((H = near(hit.planets))) { setSelected({ kind: H.kind, data: H.data, ra: H.ra, dec: H.dec }); return; }
+    // planète touchée → AUCUNE fiche (choix utilisateur) : le nom apparaît déjà via l'étiquette
+    // de visée en mode suivi ; un tap ne fait que fermer ce qui est ouvert
+    if (near(hit.planets)) { setSelected(null); return; }
     if (hudRef.current !== null) { hudRef.current = null; setHud(null); } // tap elsewhere closes the planet panel
     if ((H = near(hit.sat))) { setSelected({ kind: "satellite", data: H.data }); return; }
     if ((H = near(hit.ds))) { setSelected({ kind: H.kind, data: H.data, ra: H.data.ra, dec: H.data.dec }); zoomToRaDec(H.data.ra, H.data.dec, view.current.scale * 2); return; }
@@ -623,7 +624,7 @@ function SkyMap() {
     const cx = rect.width / 2, cy = rect.height / 2, hit = canvas._hit || {};
     const near = (arr) => { let b = null, bd = 80 * 80; (arr || []).forEach((c) => { const d = (c.x - cx) ** 2 + (c.y - cy) ** 2; if (d < bd) { bd = d; b = c; } }); return b; };
     let H;
-    if ((H = near(hit.planets))) return setSelected({ kind: H.kind, data: H.data, ra: H.ra, dec: H.dec });
+    if (near(hit.planets)) return; // planètes : pas de fiche (l'étiquette de visée suffit)
     if ((H = near(hit.sat))) return setSelected({ kind: "satellite", data: H.data });
     if ((H = near(hit.ds))) return setSelected({ kind: H.kind, data: H.data, ra: H.data.ra, dec: H.data.dec });
     if ((H = near(hit.sn))) return setSelected({ kind: H.kind, data: H.data, ra: H.data.ra, dec: H.data.dec });
