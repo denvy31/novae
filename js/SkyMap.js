@@ -62,7 +62,7 @@ function SkyMap() {
   const [showLabels, setShowLabels] = useState(true);
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showPlanets, setShowPlanets] = useState(true);
-  const [showDeepSky, setShowDeepSky] = useState(true);   // actif d'office (désactivable dans ⚙)
+  const [showDeepSky, setShowDeepSky] = useState(false);  // masqué par défaut (ciel épuré) — activable dans ⚙
   const [showSats, setShowSats] = useState(false);        // masqués par défaut (ciel épuré) — activables dans ⚙
   const [snFilter, setSnFilter] = useState(false);
   const [belowHorizon, setBelowHorizon] = useState(true); // actif d'office (désactivable dans ⚙)
@@ -735,6 +735,7 @@ function SkyMap() {
         chip(I18N.t("sky_labels"), showLabels, () => setShowLabels(!showLabels)),
         chip(I18N.t("tab_planets"), showPlanets, () => setShowPlanets(!showPlanets)),
         chip("🛰 " + I18N.t("sky_satellites"), showSats, () => setShowSats(!showSats)),
+        chip("🌌 " + I18N.t("st_deepSky"), showDeepSky, () => setShowDeepSky(!showDeepSky)),
         chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🧭 " + L2("Regarder", "Look at")),
