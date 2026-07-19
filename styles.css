@@ -943,3 +943,6 @@ body {
   55% { transform: scale(0.7); opacity: 1; }
   100% { transform: scale(1.7); opacity: 0; }
 }
+
+/* Carte de visite guidée : passe en HAUT quand la main montre un élément du bas */
+.tour-card.top { bottom: auto; top: calc(70px + env(safe-area-inset-top)); }

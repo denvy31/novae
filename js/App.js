@@ -43,7 +43,12 @@ function App() {
       const el = TOUR[tour].target && document.querySelector(TOUR[tour].target);
       if (el) {
         const r = el.getBoundingClientRect();
-        if (r.width > 0) { setHand({ x: r.left + r.width / 2, y: r.top + r.height / 2 }); return; }
+        if (r.width > 0) {
+          const y = r.top + r.height / 2;
+          // la carte de texte s'écarte de la cible : cible en bas → texte en haut, et inversement
+          setHand({ x: r.left + r.width / 2, y, top: y > window.innerHeight * 0.52 });
+          return;
+        }
       }
       setHand(null);
     };
@@ -198,7 +203,7 @@ function App() {
     tour != null && !onboard &&
       React.createElement(
         "div",
-        { className: "tour-card" },
+        { className: "tour-card" + (hand && hand.top ? " top" : "") },
         React.createElement("div", { className: "tour-head" },
           React.createElement("span", { className: "tour-icon" }, TOUR[tour].icon),
           React.createElement("div", { className: "tuto-dots tour-dots" },
