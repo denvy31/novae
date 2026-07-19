@@ -311,12 +311,15 @@
     return sp;
   }
   const orthoCache = {};
-  function orthoSphere(key, img, R, rot) {
+  // viewLat (°) : latitude d'observation — permet de basculer le globe verticalement
+  // (rotation libre dans tous les sens dans les gros plans)
+  function orthoSphere(key, img, R, rot, viewLat) {
     const S = R >= 60 ? 384 : 128;
     const q = Math.round((((rot % 1) + 1) % 1) * 128) % 128;
+    const ql = Math.round(Math.max(-85, Math.min(85, viewLat || 0)) / 1.5); // pas de 1,5°
     const ck = key + ":" + S;
     const e = orthoCache[ck];
-    if (e && e.q === q) return e.c;
+    if (e && e.q === q && e.ql === ql) return e.c;
     const sp = texPixels(key, img);
     if (!sp) return null;
     const c = (e && e.c) || document.createElement("canvas");
@@ -324,15 +327,20 @@
     const g = c.getContext("2d");
     const out = g.createImageData(S, S), od = out.data, sd = sp.d, sw = sp.w, sh = sp.h;
     const mid = (S - 1) / 2, rr = S / 2 - 0.5, rotU = q / 128, PI2 = Math.PI * 2;
+    const phi = ql * 1.5 * Math.PI / 180, cph = Math.cos(phi), sph = Math.sin(phi);
     for (let py = 0; py < S; py++) {
-      const ny = (py - mid) / rr;
+      const nyS = (py - mid) / rr;
       for (let px = 0; px < S; px++) {
         const nx = (px - mid) / rr;
-        const d2 = nx * nx + ny * ny;
+        const d2 = nx * nx + nyS * nyS;
         const o = (py * S + px) * 4;
         if (d2 > 1) { od[o + 3] = 0; continue; }
         const nz = Math.sqrt(1 - d2);
-        const lat = Math.asin(-ny), lon = Math.atan2(nx, nz);
+        const nyU = -nyS; // axe écran → axe « haut »
+        // bascule du point de vue en latitude (rotation autour de l'axe horizontal)
+        const yg = nyU * cph + nz * sph;
+        const zg = -nyU * sph + nz * cph;
+        const lat = Math.asin(Math.max(-1, Math.min(1, yg))), lon = Math.atan2(nx, zg);
         let u = rotU + lon / PI2; u -= Math.floor(u);
         const v = 0.5 - lat / Math.PI;
         const sx = Math.min(sw - 1, (u * sw) | 0), sy = Math.min(sh - 1, (v * sh) | 0);
@@ -342,7 +350,7 @@
       }
     }
     g.putImageData(out, 0, 0);
-    orthoCache[ck] = { q, c };
+    orthoCache[ck] = { q, ql, c };
     return c;
   }
 
@@ -382,7 +390,7 @@
   }
 
   // realistic planet from a real texture (falls back to procedural while loading)
-  function drawPlanetTextured(ctx, x, y, R, p, rot, light) {
+  function drawPlanetTextured(ctx, x, y, R, p, rot, light, viewLat) {
     const img = getTex(p.render);
     if (!img) { drawPlanet(ctx, x, y, R, p, rot, light); return; }
     light = light || { x: -0.55, y: -0.55 };
@@ -391,14 +399,14 @@
     ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.clip();
     ctx.fillStyle = "#000"; ctx.fillRect(x - R, y - R, 2 * R, 2 * R);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
-    const oc = orthoSphere(p.render, img, R, rot);
+    const oc = orthoSphere(p.render, img, R, rot, viewLat);
     if (oc) ctx.drawImage(oc, x - R, y - R, 2 * R, 2 * R);
     else sphereMap(ctx, img, x, y, R, rot);
     if (p.render === "earth") {
       const c = getTex("clouds");
       if (c) {
         ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.5;
-        const cc = orthoSphere("clouds", c, R, rot * 1.2);
+        const cc = orthoSphere("clouds", c, R, rot * 1.2, viewLat);
         if (cc) ctx.drawImage(cc, x - R, y - R, 2 * R, 2 * R); else sphereMap(ctx, c, x, y, R, (((rot * 1.2) % 1) + 1) % 1);
         ctx.restore();
       }
@@ -483,9 +491,9 @@
 
   // Soleil texturé (photo NASA de la photosphère, granulation réelle) — pour les gros plans.
   // Couronne discrète + assombrissement centre-bord réel du Soleil.
-  function drawSunTextured(ctx, x, y, r, rot) {
+  function drawSunTextured(ctx, x, y, r, rot, viewLat) {
     const img = getTex("sun");
-    const oc = img ? orthoSphere("sun", img, r, rot || 0) : null;
+    const oc = img ? orthoSphere("sun", img, r, rot || 0, viewLat) : null;
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     const corona = ctx.createRadialGradient(x, y, r * 0.9, x, y, r * 2.3);

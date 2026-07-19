@@ -334,7 +334,7 @@ function SkyMap() {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
         // planètes plus grandes, en rotation permanente sur elles-mêmes ; survol = ×2 + rotation rapide
         const isHov = hoverPlanetRef.current === b.pl.name;
-        const pl = b.pl, basePr = Math.max(4, Math.min(10, Math.pow(pl.diam, 0.27) / 2.8)), pr = basePr * Math.max(0.9, Math.min(3.2, zoomF)) * (isHov ? 2 : 1), light = lightTo(p);
+        const pl = b.pl, basePr = Math.max(5, Math.min(12, Math.pow(pl.diam, 0.27) / 2.4)), pr = basePr * Math.max(0.9, Math.min(3.2, zoomF)) * (isHov ? 2 : 1), light = lightTo(p);
         const rotNow = (performance.now() / (isHov ? 14000 : 45000)) % 1;
         // texture réelle dès que la planète est assez grande pour la voir (fini les boules colorées)
         if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, rotNow, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
@@ -452,10 +452,11 @@ function SkyMap() {
   // pointer
   const onPointerDown = (e) => {
     canvasRef.current.setPointerCapture(e.pointerId);
-    if (motion) { gesture.current = { calib: true, x: e.clientX, y: e.clientY, moved: false }; return; }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2) { const [a, b] = [...pointers.current.values()]; gesture.current = { pinch: true, dist: Math.hypot(a.x - b.x, a.y - b.y), scale: view.current.scale, moved: true }; }
-    else gesture.current = { pinch: false, x: e.clientX, y: e.clientY, moved: false };
+    // le PINCEMENT zoome dans TOUS les modes, y compris en suivi du téléphone
+    if (pointers.current.size === 2) { const [a, b] = [...pointers.current.values()]; gesture.current = { pinch: true, dist: Math.hypot(a.x - b.x, a.y - b.y), scale: view.current.scale, moved: true }; return; }
+    if (motion) { gesture.current = { calib: true, x: e.clientX, y: e.clientY, moved: false }; return; }
+    gesture.current = { pinch: false, x: e.clientX, y: e.clientY, moved: false };
   };
   const renderPreview = (data, kind, cxClient, cyClient) => {
     const c = previewRef.current; if (!c) return; const P = window.NovaePlanet; const dpr = window.devicePixelRatio || 1; const S = 76;
@@ -502,6 +503,12 @@ function SkyMap() {
   const onPointerMove = (e) => {
     if (!gesture.current && !motion) updateHover(e);   // survol : montre l'objet sous le curseur
     const cg = gesture.current;
+    // pincement prioritaire (fonctionne aussi en mode suivi)
+    if (cg && cg.pinch && pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.current.size >= 2) { const [a, b] = [...pointers.current.values()]; const dist = Math.hypot(a.x - b.x, a.y - b.y); let s = cg.scale * (dist / cg.dist); s = Math.max(initScale.current * 0.4, Math.min(initScale.current * 60, s)); view.current.scale = s; target.current.scale = s; drawRef.current(); }
+      return;
+    }
     if (motion && cg && cg.calib) {
       const dx = e.clientX - cg.x, dy = e.clientY - cg.y; if (Math.abs(dx) + Math.abs(dy) > 2) cg.moved = true;
       const v = view.current, fct = 1 / v.scale;
@@ -517,6 +524,7 @@ function SkyMap() {
   };
   const onPointerUp = (e) => {
     const gs = gesture.current;
+    pointers.current.delete(e.pointerId);
     if (motion) {
       gesture.current = null;
       if (gs && gs.calib && !gs.moved) selectCenter();

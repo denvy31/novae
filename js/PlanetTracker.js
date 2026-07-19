@@ -14,7 +14,9 @@ function PlanetTracker(props) {
   const simDays = useRef(0);
   const zoomC = useRef(1);        // zoom du gros plan (molette / pincement)
   const rotOff = useRef(0);       // rotation manuelle du gros plan (glisser = tourner autour)
+  const rotLat = useRef(0);       // bascule verticale (glisser haut/bas = voir les pôles)
   const dragX = useRef(null);
+  const dragY = useRef(null);
   const pinch = useRef(null);
   const [speed, setSpeed] = useState(1 / 86400); // TEMPS RÉEL par défaut (1 s = 1 s)
   const [evoOpen, setEvoOpen] = useState(false); // panneau « Évolution du Soleil »
@@ -119,7 +121,7 @@ function PlanetTracker(props) {
       starfield(ctx, w, h);
       const cx = w / 2, cy = h / 2, p = selected;
       const phase2 = simDays.current / Math.max(0.25, p.dayLen) + rotOff.current; // + rotation manuelle (glisser)
-      if (p.sun) { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.34 * zoomC.current, phase2 * 0.2); return; }
+      if (p.sun) { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.34 * zoomC.current, phase2 * 0.2, rotLat.current); return; }
       const maxMoon = p.moons.reduce((a, m) => Math.max(a, m.dist), 0);
       const extent = Math.max(maxMoon, p.rings ? 2.3 : 1.2) + 0.55;
       const R = Math.min(Math.min(w, h) * 0.5 / extent, Math.min(w, h) * 0.32) * zoomC.current;
@@ -139,7 +141,7 @@ function PlanetTracker(props) {
 
       moons.filter((mo) => mo.depth < 0).forEach(drawMoon);
       if (p.rings) P.drawRings(ctx, cx, cy, R, light, false);
-      P.drawPlanetTextured(ctx, cx, cy, R, p, phase, light);
+      P.drawPlanetTextured(ctx, cx, cy, R, p, phase, light, rotLat.current);
       if (p.rings) P.drawRings(ctx, cx, cy, R, light, true);
       moons.filter((mo) => mo.depth >= 0).forEach(drawMoon);
     }
@@ -155,15 +157,17 @@ function PlanetTracker(props) {
   // zoom du gros plan : molette, pincement à deux doigts, double-clic pour réinitialiser
   const cPtrs = useRef(new Map());
   const onCloseWheel = (e) => { e.preventDefault(); zoomC.current = Math.max(0.6, Math.min(4.5, zoomC.current * (e.deltaY < 0 ? 1.15 : 0.87))); };
-  const onCloseDown = (e) => { closeRef.current.setPointerCapture(e.pointerId); cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); dragX.current = e.clientX; if (cPtrs.current.size === 2) { const [a, b] = [...cPtrs.current.values()]; pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomC.current }; } };
+  const onCloseDown = (e) => { closeRef.current.setPointerCapture(e.pointerId); cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); dragX.current = e.clientX; dragY.current = e.clientY; if (cPtrs.current.size === 2) { const [a, b] = [...cPtrs.current.values()]; pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomC.current }; } };
   const onCloseMove = (e) => {
     if (!cPtrs.current.has(e.pointerId)) return;
     cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pinch.current && cPtrs.current.size >= 2) { const [a, b] = [...cPtrs.current.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); zoomC.current = Math.max(0.6, Math.min(4.5, pinch.current.z * (d / pinch.current.d))); return; }
-    // un doigt / souris : glisser = tourner autour de la planète
+    // un doigt / souris : glisser = tourner la planète DANS TOUS LES SENS
+    // (horizontal = longitude, vertical = bascule vers les pôles)
     if (dragX.current != null) { rotOff.current -= (e.clientX - dragX.current) * 0.004; dragX.current = e.clientX; }
+    if (dragY.current != null) { rotLat.current = Math.max(-85, Math.min(85, rotLat.current + (e.clientY - dragY.current) * 0.45)); dragY.current = e.clientY; }
   };
-  const onCloseUp = (e) => { cPtrs.current.delete(e.pointerId); dragX.current = null; if (cPtrs.current.size < 2) pinch.current = null; };
+  const onCloseUp = (e) => { cPtrs.current.delete(e.pointerId); dragX.current = null; dragY.current = null; if (cPtrs.current.size < 2) pinch.current = null; };
 
   // eslint-disable-next-line no-use-before-define
   return React.createElement("div", { className: "panel-grid" },
@@ -183,7 +187,7 @@ function PlanetTracker(props) {
         ref: closeRef, className: "closeup-canvas",
         onWheel: onCloseWheel, onPointerDown: onCloseDown, onPointerMove: onCloseMove,
         onPointerUp: onCloseUp, onPointerCancel: onCloseUp,
-        onDoubleClick: () => { zoomC.current = 1; },
+        onDoubleClick: () => { zoomC.current = 1; rotOff.current = 0; rotLat.current = 0; },
       }),
       React.createElement("h3", null, selected.sun ? "Soleil ☀️" : pname(selected.name)),
       selected.dwarf && React.createElement("span", { className: "tag" }, tr("pl_dwarf")),
@@ -204,7 +208,7 @@ function PlanetTracker(props) {
                 React.createElement("tr", null, React.createElement("td", null, tr("pl_rings")), React.createElement("td", null, selected.rings ? tr("yes") : tr("no")))))),
       React.createElement("p", { className: "info-note" }, selected.fact),
       selected.moons.length > 0 && React.createElement("p", { className: "hint" }, tr("pl_moons_shown") + " " + selected.moons.map((m) => m.name).join(", ")),
-      React.createElement("p", { className: "hint" }, "🔍 Molette / pincez pour zoomer · double-clic : réinitialiser"),
+      React.createElement("p", { className: "hint" }, lang === "fr" ? "🔍 Molette / pincez : zoomer · glissez : tourner la planète dans tous les sens · double-clic : réinitialiser" : "🔍 Wheel / pinch: zoom · drag: rotate the planet any way you like · double-click: reset"),
       !selected.sun && React.createElement("p", { className: "hint ua-hint" },
         "💡 UA = unité astronomique, la distance Terre–Soleil (≈ 150 millions de km). " +
         (selected.name === "Terre" ? "La Terre est donc à 1 UA par définition."
