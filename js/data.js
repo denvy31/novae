@@ -124,19 +124,26 @@
 
   const events = [
     { date: "2026-06-21", type: "Solstice", icon: "☀️", title: "Solstice d'été", desc: "Nuit la plus courte de l'année dans l'hémisphère nord.",
-      where: "Visible partout — c'est un moment, pas un phénomène localisé. Profitez du crépuscule tardif." },
+      where: "Visible partout — c'est un moment, pas un phénomène localisé. Profitez du crépuscule tardif.",
+      more: "En détail : au solstice, le pôle Nord est incliné au maximum vers le Soleil — jour le plus long de l'année dans l'hémisphère nord. Le Soleil culmine au plus haut de l'année à midi solaire. Idéal pour repérer le point exact du coucher de Soleil le plus au nord-ouest de l'année." },
     { date: "2026-07-29", type: "Pluie de météores", icon: "☄️", title: "Delta Aquarides", desc: "ZHR ≈ 25. Radiant dans le Verseau. Mieux avant l'aube.",
-      where: "Où voir : partout, idéalement sous un ciel Bortle ≤ 4, entre 2 h et l'aube. Regardez vers le sud-est, allongé, sans télescope — les yeux suffisent." },
+      where: "Où voir : partout, idéalement sous un ciel Bortle ≤ 4, entre 2 h et l'aube. Regardez vers le sud-est, allongé, sans télescope — les yeux suffisent.",
+      more: "En détail : cette pluie vient des poussières de la comète 96P/Machholz. Les météores sont plutôt lents et discrets — comptez 15 à 25 par heure sous un bon ciel. Meilleure fenêtre : 2 h–4 h 30 du matin, Lune couchée. Installez-vous sur un transat, laissez vos yeux s'habituer 20 minutes au noir (pas de téléphone !), et balayez la moitié sud-est du ciel sans fixer un point précis." },
     { date: "2026-08-12", type: "Éclipse", icon: "🌑", title: "Éclipse solaire totale", desc: "Totalité visible depuis l'Islande et l'Espagne. Chemin de 294 km.",
-      where: "Où voir : la totalité traverse l'Islande puis le nord de l'Espagne (Saragosse, Valence vers 20 h 30). Depuis la France : éclipse partielle ~90 % — lunettes spéciales OBLIGATOIRES." },
+      where: "Où voir : la totalité traverse l'Islande puis le nord de l'Espagne (Saragosse, Valence vers 20 h 30). Depuis la France : éclipse partielle ~90 % — lunettes spéciales OBLIGATOIRES.",
+      more: "En détail : c'est la première éclipse totale visible d'Europe continentale depuis 1999 ! La totalité (Soleil entièrement caché, couronne visible) dure ~1 min 40 en Espagne, en fin de journée près de l'horizon — cherchez un point de vue dégagé vers l'ouest. En France, ~90 % du Soleil sera masqué : la lumière deviendra étrange, mais NE regardez JAMAIS sans lunettes certifiées ISO 12312-2 (les lunettes de soleil ne protègent PAS). Réservez tôt si vous voyagez : c'est l'événement astronomique de la décennie en Europe." },
     { date: "2026-08-12", type: "Pluie de météores", icon: "☄️", title: "Perséides — maximum", desc: "ZHR ≈ 100. Radiant dans Persée. La pluie majeure de l'été.",
-      where: "Où voir : campagne sans lampadaires (Bortle ≤ 4), après 23 h. Regardez vers le nord-est, dos à la Lune. Comptez 20 min d'adaptation des yeux au noir." },
+      where: "Où voir : campagne sans lampadaires (Bortle ≤ 4), après 23 h. Regardez vers le nord-est, dos à la Lune. Comptez 20 min d'adaptation des yeux au noir.",
+      more: "En détail : LA pluie de l'année ! Débris de la comète Swift-Tuttle, météores rapides (59 km/s) laissant souvent des traînées persistantes. Jusqu'à 100/heure au zénith sous ciel noir. Stratégie : soirée du 12 au 13 août, allongé pieds vers le nord-est, champ de vision large. Les plus brillants (bolides) traversent tout le ciel — pas besoin de matériel, vos yeux sont l'instrument parfait." },
     { date: "2026-09-18", type: "Conjonction", icon: "🪐", title: "Saturne à l'opposition", desc: "Saturne au plus proche et brillante toute la nuit. Anneaux idéaux.",
-      where: "Où voir : visible de partout, même en ville. Plein sud vers minuit. Les anneaux se révèlent dès une petite lunette (×50)." },
+      where: "Où voir : visible de partout, même en ville. Plein sud vers minuit. Les anneaux se révèlent dès une petite lunette (×50).",
+      more: "En détail : à l'opposition, Saturne est pile à l'opposé du Soleil — au plus proche de la Terre (~1,3 milliard de km) et visible TOUTE la nuit. À l'œil nu : un point doré brillant qui ne scintille pas. Aux jumelles 10× : forme ovale. Dans une lunette dès 50× : les anneaux, magiques. Cherchez aussi Titan, sa plus grosse lune, petit point à côté." },
     { date: "2026-10-08", type: "Aurore", icon: "🌌", title: "Activité aurorale (Kp 6)", desc: "Tempête géomagnétique prévue. Aurores possibles aux latitudes moyennes.",
-      where: "Où voir : horizon NORD bien dégagé, loin des villes. En France, chances surtout au nord de la Loire ; photos au smartphone (pose 3-10 s) plus sensibles que l'œil." },
+      where: "Où voir : horizon NORD bien dégagé, loin des villes. En France, chances surtout au nord de la Loire ; photos au smartphone (pose 3-10 s) plus sensibles que l'œil.",
+      more: "En détail : une tempête géomagnétique Kp 6 pousse l'ovale auroral vers le sud. En France, l'aurore apparaît comme une lueur rouge/rose au ras de l'horizon nord — l'œil la voit à peine, mais un smartphone en mode nuit (pose 3-10 s, posé sur un support) la révèle spectaculairement. Surveillez l'indice Kp en temps réel le soir même : les meilleures fenêtres durent 30 min à 2 h. Patience et horizon dégagé obligatoires." },
     { date: "2026-12-14", type: "Pluie de météores", icon: "☄️", title: "Géminides — maximum", desc: "ZHR ≈ 120. La meilleure pluie de l'année. Météores lents et brillants.",
-      where: "Où voir : partout sous ciel sombre, dès 21 h (radiant haut vers minuit). Regardez vers l'est-sud-est. Habillez-vous très chaudement !" },
+      where: "Où voir : partout sous ciel sombre, dès 21 h (radiant haut vers minuit). Regardez vers l'est-sud-est. Habillez-vous très chaudement !",
+      more: "En détail : la pluie la plus généreuse de l'année (jusqu'à 120/h) et la plus accessible : active dès 21 h, pas besoin d'attendre l'aube. Météores lents et brillants, souvent colorés (jaune, vert, bleu) — issus de l'astéroïde 3200 Phaéton, un cas rare. Le froid de décembre est l'ennemi n°1 : duvet, bonnet, boisson chaude, et pauses toutes les 30 min. Les enfants peuvent en profiter dès la tombée de la nuit." },
   ];
 
   const stats = {

@@ -55,6 +55,8 @@ function SkyMap() {
   const previewRef = useRef(null); // planet icon preview element
   const previewFns = useRef({});
   const hudRef = useRef(null);        // currently-shown planet HUD name (change guard)
+  const hoverPlanetRef = useRef(null); // planète sous le curseur : grossie + rotation en direct
+  const hoverRAF = useRef(0);
   const centerPlanetRef = useRef(null); // planet aimed by the reticle (motion)
 
   const [, force] = useState(0); const rerender = () => force((n) => n + 1);
@@ -249,7 +251,7 @@ function SkyMap() {
     // Milky Way = a dense cloud of faint stars along the galactic plane (no halos → no blobs)
     if (showMilkyWay && f.mw) { ctx.fillStyle = "#cdd8f5"; for (let i = 0; i < f.mw.length; i++) { const m = f.mw[i]; if (m[1] < minAlt) continue; const p = project(m[0], m[1], w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) continue; ctx.globalAlpha = m[2] * 0.8; ctx.fillRect(p[0], p[1], 1, 1); } ctx.globalAlpha = 1; }
     // dense faint background starfield (depth)
-    if (f.dust) { ctx.fillStyle = "#d6def0"; for (let i = 0; i < f.dust.length; i++) { const d = f.dust[i]; if (d[1] < minAlt) continue; const p = project(d[0], d[1], w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) continue; ctx.globalAlpha = d[2] * 0.7; ctx.fillRect(p[0], p[1], 1, 1); } ctx.globalAlpha = 1; }
+    if (f.dust) { ctx.fillStyle = "#d6def0"; for (let i = 0; i < f.dust.length; i++) { const d = f.dust[i]; if (d[1] < minAlt) continue; const p = project(d[0], d[1], w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) continue; ctx.globalAlpha = d[2] * 0.32; ctx.fillRect(p[0], p[1], 1, 1); } ctx.globalAlpha = 1; }
 
     // stars — bright ones get bloom + diffraction spikes (astrophoto look)
     const starsHit = [];
@@ -273,8 +275,11 @@ function SkyMap() {
         spike(0); spike(Math.PI); spike(Math.PI / 2); spike(-Math.PI / 2);
         ctx.restore();
       }
+      // étoiles faibles nettement plus transparentes : les constellations ressortent, ciel épuré
+      ctx.globalAlpha = s.mag > 4.6 ? 0.3 : s.mag > 3.4 ? 0.55 : 1;
       ctx.fillStyle = s.mag < 1.5 ? "#f5f7ff" : s.color;
       ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
       if (r > 1.0) starsHit.push({ x, y, r, s });
     }
 
@@ -324,9 +329,12 @@ function SkyMap() {
       if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)); P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
       f.bodies.forEach((b) => {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
-        const pl = b.pl, basePr = Math.max(3, Math.min(8, Math.pow(pl.diam, 0.27) / 3.2)), pr = basePr * Math.max(0.7, Math.min(3.2, zoomF)), light = lightTo(p);
+        // planète sous le curseur : grossie ×2.3 et rotation en temps réel
+        const isHov = hoverPlanetRef.current === b.pl.name;
+        const pl = b.pl, basePr = Math.max(3, Math.min(8, Math.pow(pl.diam, 0.27) / 3.2)), pr = basePr * Math.max(0.7, Math.min(3.2, zoomF)) * (isHov ? 2.3 : 1), light = lightTo(p);
+        const rotNow = isHov ? (performance.now() / 16000) % 1 : 0.2;
         // texture réelle dès que la planète est assez grande pour la voir (fini les boules colorées)
-        if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, 0.2, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
+        if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, rotNow, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
         else { P.drawBall(ctx, p[0], p[1], pr, pl.color, light); if (pl.rings) { ctx.strokeStyle = "rgba(220,205,160,0.8)"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(p[0], p[1], pr * 2, pr * 0.7, 0.5, 0, 7); ctx.stroke(); } }
         ctx.fillStyle = "rgba(235,240,255,0.92)"; ctx.font = "11px system-ui"; ctx.fillText(pl.name, p[0] + pr + 4, p[1] + 3);
         planetHit.push({ x: p[0], y: p[1], r: pr + 8, kind: "planet", data: pl, ra: b.ra, dec: b.dec });
@@ -368,9 +376,11 @@ function SkyMap() {
         namedHit.map((n) => ({ x: n.x, y: n.y, name: n.s.name, kind: "star", data: n.s })),
         satHit.map((s) => ({ x: s.x, y: s.y, name: s.data.name, kind: "satellite", data: s.data })),
         dsHit.map((d) => ({ x: d.x, y: d.y, name: d.data.name || ("M" + d.data.m), kind: d.kind, data: d.data })));
-      let best = null, bd = 70 * 70; all.forEach((c) => { const d = (c.x - w / 2) ** 2 + (c.y - h / 2) ** 2; if (d < bd) { bd = d; best = c; } });
-      let cbc = null, cbd = 200 * 200; (canvas._consts || []).forEach((c) => { const d = (c.x - w / 2) ** 2 + (c.y - h / 2) ** 2; if (d < cbd) { cbd = d; cbc = c; } });
-      hoveredConst.current = cbc ? cbc.idx : -1;
+      // sélection NETTE : un objet proche du point (50 px) a priorité ABSOLUE — la constellation
+      // n'est visée (et surlignée) que si AUCUN objet n'est là. Fini planète visée = constellation.
+      let best = null, bd = 50 * 50; all.forEach((c) => { const d = (c.x - w / 2) ** 2 + (c.y - h / 2) ** 2; if (d < bd) { bd = d; best = c; } });
+      let cbc = null, cbd = 170 * 170; (canvas._consts || []).forEach((c) => { const d = (c.x - w / 2) ** 2 + (c.y - h / 2) ** 2; if (d < cbd) { cbd = d; cbc = c; } });
+      hoveredConst.current = best ? -1 : (cbc ? cbc.idx : -1);
       reticleRef.current = best ? { name: best.name, kind: best.kind, data: best.data } : (cbc && f.consts[cbc.idx] ? { name: f.consts[cbc.idx].name, kind: "const", data: null } : null);
       let pc = null, pcd = 70 * 70; planetHit.forEach((p) => { const d = (p.x - w / 2) ** 2 + (p.y - h / 2) ** 2; if (d < pcd) { pcd = d; pc = p; } });
       centerPlanetRef.current = pc ? { data: pc.data, kind: pc.kind } : null;
@@ -416,7 +426,7 @@ function SkyMap() {
         }
       } catch (e) {}
     });
-    const tick = setInterval(() => { if (!mounted) return; const c = clock.current; if (c.live) c.date = new Date(); else if (c.rate) c.date = new Date(c.date.getTime() + c.rate * 1000); setClockLabel(fmtClock(c.date, c.live)); if (motionOn.current) { const r = reticleRef.current; setAim((prev) => (prev && r && prev.name === r.name ? prev : r)); } refresh(); }, 1000);
+    const tick = setInterval(() => { if (!mounted) return; const c = clock.current; if (c.live) c.date = new Date(); else if (c.rate) c.date = new Date(c.date.getTime() + c.rate * 1000); setClockLabel(fmtClock(c.date, c.live)); refresh(); }, 1000);
     const onResize = () => drawRef.current();
     window.addEventListener("resize", onResize);
     return () => { mounted = false; clearInterval(tick); cancelAnimationFrame(motionRAF.current); window.removeEventListener("resize", onResize); window.removeEventListener("deviceorientationabsolute", handleOrientation, true); window.removeEventListener("deviceorientation", handleOrientation, true); };
@@ -473,6 +483,11 @@ function SkyMap() {
     if (newConst !== hoveredConst.current) { hoveredConst.current = newConst; drawRef.current(); }
     if (!best && cb && frame.current && frame.current.consts[cb.idx]) { best = cb; label = frame.current.consts[cb.idx].name; }
     const isPlanet = bk === "planet" || bk === "sun" || bk === "moon";
+    // planète survolée : grossie + rotation animée en continu (boucle RAF dédiée)
+    const spinLoop = () => { if (!hoverPlanetRef.current) { hoverRAF.current = 0; return; } drawRef.current(); hoverRAF.current = requestAnimationFrame(spinLoop); };
+    if (isPlanet) {
+      if (hoverPlanetRef.current !== best.data.name) { hoverPlanetRef.current = best.data.name; if (!hoverRAF.current) hoverRAF.current = requestAnimationFrame(spinLoop); }
+    } else if (hoverPlanetRef.current) { hoverPlanetRef.current = null; }
     if (isPlanet) { const nm = best.data.name; if (hudRef.current !== nm) { hudRef.current = nm; setHud({ data: best.data, kind: bk }); } tip.style.display = "none"; canvas.style.cursor = "pointer"; }
     else {
       if (hudRef.current !== null) { hudRef.current = null; setHud(null); }
@@ -616,8 +631,10 @@ function SkyMap() {
       v.roll += ((o.roll || 0) - v.roll) * 0.2;  // gentler: gamma is noisy near vertical
     }
     drawRef.current();
-    // épure : pas de panneau auto en mode suivi — le nom s'affiche en bas (aim-label),
-    // la fiche complète s'ouvre au tap (selectCenter)
+    // étiquette de visée mise à jour À CHAQUE IMAGE (plus de décalage d'une seconde
+    // entre l'astre visé et le nom affiché en bas)
+    const r2 = reticleRef.current;
+    setAim((prev) => (prev === r2 || (prev && r2 && prev.name === r2.name) ? prev : r2));
     if (motionOn.current) motionRAF.current = requestAnimationFrame(motionLoop);
   }, []);
   const recalibrate = () => { azOffset.current = 0; altOffset.current = 0; chAnchor.current = null; chBranch.current = null; try { localStorage.removeItem("novae-calib"); } catch (e) {} };
@@ -690,7 +707,7 @@ function SkyMap() {
   const chip = (label, on, onClick, cls) => React.createElement("button", { key: label, className: "chip" + (cls || "") + (on ? " on" : ""), onClick }, label);
 
   return React.createElement("div", { className: "skymap-wrap" },
-    React.createElement("canvas", { ref: canvasRef, className: "skymap-canvas", onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onWheel, onPointerLeave: () => { const t = hoverRef.current; if (t) t.style.display = "none"; const pv = previewRef.current; if (pv) pv.style.display = "none"; if (hudRef.current !== null) { hudRef.current = null; setHud(null); } if (hoveredConst.current !== -1) { hoveredConst.current = -1; drawRef.current(); } } }),
+    React.createElement("canvas", { ref: canvasRef, className: "skymap-canvas", onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onWheel, onPointerLeave: () => { const t = hoverRef.current; if (t) t.style.display = "none"; const pv = previewRef.current; if (pv) pv.style.display = "none"; hoverPlanetRef.current = null; if (hudRef.current !== null) { hudRef.current = null; setHud(null); } if (hoveredConst.current !== -1) { hoveredConst.current = -1; drawRef.current(); } } }),
     React.createElement("div", { ref: hoverRef, className: "hover-tip" }),
     React.createElement("canvas", { ref: previewRef, className: "planet-preview" }),
     React.createElement("div", { className: "sky-toolbar" },

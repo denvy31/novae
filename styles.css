@@ -946,3 +946,36 @@ body {
 
 /* Carte de visite guidée : passe en HAUT quand la main montre un élément du bas */
 .tour-card.top { bottom: auto; top: calc(70px + env(safe-area-inset-top)); }
+
+/* ============================================================
+   v49 — calques désactivés nets, événements dépliables, évolution Soleil, avertissements
+   ============================================================ */
+/* calque désactivé : plus AUCUN contour bleu, état clairement éteint */
+.layer-panel .chip:not(.on) { border-color: rgba(255,255,255,0.07); color: rgba(135,148,186,0.6); background: rgba(10,14,28,0.4); box-shadow: none; opacity: 0.8; }
+
+/* événements dépliables */
+.event-card.clickable { cursor: pointer; }
+.event-card.open { border-color: var(--accent); background: rgba(16,24,48,0.75); }
+.event-chevron { margin-left: auto; color: var(--accent); font-size: 12px; }
+.event-more { font-size: 12.5px; color: #cdd9f2; margin-top: 8px; line-height: 1.55; background: rgba(88,200,255,0.06); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 0 10px 10px 0; }
+
+/* barre vitesse : bouton temps réel + évolution */
+.sim-speed .chip { flex: 0 0 auto; }
+.rt-btn.on { background: rgba(70,224,160,0.2); border-color: var(--good); color: #9af0c0; }
+
+/* Évolution du Soleil */
+.evo-overlay { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(2,3,10,0.85); backdrop-filter: blur(10px); }
+.evo-card { position: relative; width: min(560px, calc(100vw - 30px)); background: var(--panel-strong); border: 1px solid var(--border-bright); border-radius: 20px; padding: 18px 22px; box-shadow: var(--shadow); animation: cardIn 0.25s ease; }
+.evo-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--muted); font-size: 26px; cursor: pointer; }
+.evo-close:hover { color: #fff; }
+.evo-card h3 { margin-bottom: 10px; }
+.evo-canvas { width: 100%; height: 240px; border-radius: 14px; border: 1px solid var(--border); background: #010208; }
+.evo-slider { width: 100%; margin: 14px 0 8px; appearance: none; height: 6px; border-radius: 999px; background: linear-gradient(90deg, #ffd24a, #ff8c42, #ff5040, #b8c6ff, #eef4ff); cursor: pointer; }
+.evo-slider::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); box-shadow: 0 0 12px rgba(88,200,255,0.6); }
+.evo-stage { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+.evo-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 5px; min-height: 58px; }
+
+/* avertissements utilisateur */
+.warn-stack { position: fixed; top: calc(64px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 8px; width: min(430px, calc(100vw - 24px)); animation: cardIn 0.3s ease; }
+.warn-toast { background: rgba(255,157,60,0.12); border: 1px solid rgba(255,157,60,0.5); color: #ffd9b0; border-radius: 13px; padding: 10px 14px; font-size: 12.5px; line-height: 1.45; backdrop-filter: blur(12px); }
+.warn-close { position: absolute; top: -10px; right: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--panel-solid); border: 1px solid var(--border-bright); color: var(--text); cursor: pointer; font-size: 12px; }

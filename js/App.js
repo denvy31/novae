@@ -15,6 +15,14 @@ function App() {
   // à CHAQUE ouverture : supernova → choix de langue → visite guidée dans la vraie interface
   const [onboard, setOnboard] = useState("full");
   const [tour, setTour] = useState(null); // étape de la visite guidée (null = terminée)
+  // ⚠️ avertissements utilisateur (coque aimantée, localisation) : montrés aux 2 premières ouvertures
+  const [warns, setWarns] = useState(() => { try { return (+(localStorage.getItem("novae-warns") || 0)) < 2; } catch (e) { return true; } });
+  useEffect(() => {
+    if (!warns || onboard || tour != null) return;
+    try { localStorage.setItem("novae-warns", String((+(localStorage.getItem("novae-warns") || 0)) + 1)); } catch (e) {}
+    const t = setTimeout(() => setWarns(false), 16000);
+    return () => clearTimeout(t);
+  }, [warns, onboard, tour]);
 
   // Visite guidée : l'app SE DÉPLACE d'onglet en onglet — l'utilisateur découvre chaque
   // fonctionnalité en direct sur le vrai écran, pas sur des diapositives.
@@ -185,6 +193,17 @@ function App() {
         ),
       ),
     ),
+
+    // ⚠️ avertissements (2 premières ouvertures) — fermables d'un tap
+    warns && !onboard && tour == null &&
+      React.createElement(
+        "div",
+        { className: "warn-stack" },
+        React.createElement("div", { className: "warn-toast" },
+          React.createElement("span", null, isFr ? "🧲 Retirez les coques aimantées : elles faussent la boussole du téléphone." : "🧲 Remove magnetic cases: they throw off the phone's compass.")),
+        React.createElement("div", { className: "warn-toast" },
+          React.createElement("span", null, isFr ? "📍 Pensez à activer votre localisation pour une meilleure immersion (ciel exact au-dessus de vous)." : "📍 Enable location for better immersion (the exact sky above you).")),
+        React.createElement("button", { className: "warn-close", onClick: () => setWarns(false) }, "✕")),
 
     // Accueil : supernova + Bienvenue + langue ; puis la visite guidée prend le relais
     onboard &&

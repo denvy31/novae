@@ -13,8 +13,11 @@ function PlanetTracker(props) {
   const dateRef = useRef(null);
   const simDays = useRef(0);
   const zoomC = useRef(1);        // zoom du gros plan (molette / pincement)
+  const rotOff = useRef(0);       // rotation manuelle du gros plan (glisser = tourner autour)
+  const dragX = useRef(null);
   const pinch = useRef(null);
-  const [speed, setSpeed] = useState(20);
+  const [speed, setSpeed] = useState(1 / 86400); // TEMPS RÉEL par défaut (1 s = 1 s)
+  const [evoOpen, setEvoOpen] = useState(false); // panneau « Évolution du Soleil »
   // le Soleil est sélectionnable comme les planètes
   const SUN = { name: "Soleil", sun: true, render: "sun", color: "#ffd24a", diam: 1392700, dayLen: 25.4, moons: [], rings: false, fact: "Étoile naine jaune (G2V). 99,86 % de la masse du système solaire. Température de surface ≈ 5 500 °C, cœur ≈ 15 millions °C." };
   const [selected, setSelected] = useState(NV.planets[4]); // Jupiter (montre lunes + bandes)
@@ -115,7 +118,7 @@ function PlanetTracker(props) {
       ctx.fillStyle = "#04050c"; ctx.fillRect(0, 0, w, h);
       starfield(ctx, w, h);
       const cx = w / 2, cy = h / 2, p = selected;
-      const phase2 = simDays.current / Math.max(0.25, p.dayLen);
+      const phase2 = simDays.current / Math.max(0.25, p.dayLen) + rotOff.current; // + rotation manuelle (glisser)
       if (p.sun) { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.34 * zoomC.current, phase2 * 0.2); return; }
       const maxMoon = p.moons.reduce((a, m) => Math.max(a, m.dist), 0);
       const extent = Math.max(maxMoon, p.rings ? 2.3 : 1.2) + 0.55;
@@ -152,18 +155,27 @@ function PlanetTracker(props) {
   // zoom du gros plan : molette, pincement à deux doigts, double-clic pour réinitialiser
   const cPtrs = useRef(new Map());
   const onCloseWheel = (e) => { e.preventDefault(); zoomC.current = Math.max(0.6, Math.min(4.5, zoomC.current * (e.deltaY < 0 ? 1.15 : 0.87))); };
-  const onCloseDown = (e) => { closeRef.current.setPointerCapture(e.pointerId); cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (cPtrs.current.size === 2) { const [a, b] = [...cPtrs.current.values()]; pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomC.current }; } };
-  const onCloseMove = (e) => { if (!cPtrs.current.has(e.pointerId)) return; cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pinch.current && cPtrs.current.size >= 2) { const [a, b] = [...cPtrs.current.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); zoomC.current = Math.max(0.6, Math.min(4.5, pinch.current.z * (d / pinch.current.d))); } };
-  const onCloseUp = (e) => { cPtrs.current.delete(e.pointerId); if (cPtrs.current.size < 2) pinch.current = null; };
+  const onCloseDown = (e) => { closeRef.current.setPointerCapture(e.pointerId); cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); dragX.current = e.clientX; if (cPtrs.current.size === 2) { const [a, b] = [...cPtrs.current.values()]; pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomC.current }; } };
+  const onCloseMove = (e) => {
+    if (!cPtrs.current.has(e.pointerId)) return;
+    cPtrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch.current && cPtrs.current.size >= 2) { const [a, b] = [...cPtrs.current.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); zoomC.current = Math.max(0.6, Math.min(4.5, pinch.current.z * (d / pinch.current.d))); return; }
+    // un doigt / souris : glisser = tourner autour de la planète
+    if (dragX.current != null) { rotOff.current -= (e.clientX - dragX.current) * 0.004; dragX.current = e.clientX; }
+  };
+  const onCloseUp = (e) => { cPtrs.current.delete(e.pointerId); dragX.current = null; if (cPtrs.current.size < 2) pinch.current = null; };
 
+  // eslint-disable-next-line no-use-before-define
   return React.createElement("div", { className: "panel-grid" },
     React.createElement("div", { className: "planet-stage" },
       React.createElement("canvas", { ref: mapRef, className: "planet-canvas", onClick: onMapClick }),
       React.createElement("div", { className: "sim-date", ref: dateRef }, "🗓 …"),
       React.createElement("div", { className: "sim-speed" },
-        React.createElement("label", null, tr("pl_speed")),
-        React.createElement("input", { type: "range", min: 0, max: 365, step: 1, value: speed, onChange: (e) => setSpeed(Number(e.target.value)) }),
-        React.createElement("span", { className: "speed-val" }, speed === 0 ? tr("pl_pause") : "×" + Math.round(speed * 86400).toLocaleString(I18N.locale())))
+        React.createElement("button", { className: "chip rt-btn" + (speed < 0.01 && speed > 0 ? " on" : ""), onClick: () => setSpeed(1 / 86400) }, "⏱ " + (lang === "fr" ? "Temps réel" : "Real time")),
+        React.createElement("input", { type: "range", min: 0, max: 365, step: 1, value: Math.round(speed), onChange: (e) => setSpeed(Number(e.target.value)) }),
+        React.createElement("span", { className: "speed-val" }, speed === 0 ? tr("pl_pause") : speed < 0.01 ? (lang === "fr" ? "Temps réel" : "Real time") : "×" + Math.round(speed * 86400).toLocaleString(I18N.locale())),
+        React.createElement("button", { className: "chip", onClick: () => setEvoOpen(true) }, "🕰 " + (lang === "fr" ? "Évolution du Soleil" : "Sun's future"))),
+      evoOpen && React.createElement(SunEvolution, { lang, onClose: () => setEvoOpen(false) })
     ),
 
     React.createElement("aside", { className: "planet-info" },
@@ -200,4 +212,86 @@ function PlanetTracker(props) {
       React.createElement("p", { className: "hint" }, tr("pl_hint"))
     )
   );
+}
+
+// ---- Évolution du Soleil : curseur du présent à la naine blanche (science honnête) ----
+function SunEvolution({ lang, onClose }) {
+  const { useRef, useEffect, useState } = React;
+  const cv = useRef(null); const val = useRef(0); const raf = useRef(0);
+  const [stageIdx, setStageIdx] = useState(0);
+  const fr = lang === "fr";
+  const P = window.NovaePlanet;
+  const ST = [
+    { p: 0, t: fr ? "Aujourd'hui" : "Today", d: fr ? "Notre étoile, naine jaune stable depuis 4,6 milliards d'années. Elle fusionne 600 millions de tonnes d'hydrogène chaque seconde." : "Our star, a stable yellow dwarf for 4.6 billion years, fusing 600 million tonnes of hydrogen every second.", size: 0.15, tint: null },
+    { p: 0.18, t: fr ? "+1 milliard d'années" : "+1 billion years", d: fr ? "Le Soleil brille ~10 % plus fort : les océans de la Terre s'évaporent." : "The Sun shines ~10% brighter: Earth's oceans evaporate.", size: 0.17, tint: "255,245,220,0.15" },
+    { p: 0.45, t: fr ? "+5 milliards d'années" : "+5 billion years", d: fr ? "L'hydrogène du cœur s'épuise : le Soleil enfle en sous-géante orange." : "Core hydrogen runs out: the Sun swells into an orange subgiant.", size: 0.3, tint: "255,170,80,0.22" },
+    { p: 0.68, t: fr ? "+6,5 Md — GÉANTE ROUGE" : "+6.5 billion — RED GIANT", d: fr ? "~200 fois sa taille : Mercure et Vénus sont englouties. Depuis la Terre, le Soleil remplirait la moitié du ciel." : "~200× its size: Mercury and Venus are engulfed. From Earth, the Sun would fill half the sky.", size: 0.92, tint: "255,90,40,0.35" },
+    { p: 0.86, t: fr ? "+7,5 Md — nébuleuse planétaire" : "+7.5 billion — planetary nebula", d: fr ? "Les couches externes sont soufflées en voiles de gaz colorés : le cœur nu se dévoile." : "The outer layers blow away into glowing gas shells: the bare core is revealed.", size: 0.1, neb: true },
+    { p: 1, t: fr ? "+8 Md — NAINE BLANCHE" : "+8 billion — WHITE DWARF", d: fr ? "Le Soleil finit en naine blanche grande comme la Terre, refroidissant pendant des milliards d'années. ⚠️ Il ne deviendra JAMAIS un trou noir : il faudrait une étoile au moins 20 fois plus massive." : "The Sun ends as an Earth-sized white dwarf, cooling for billions of years. ⚠️ It will NEVER become a black hole: that takes a star at least 20× more massive.", size: 0.035, wd: true },
+  ];
+
+  useEffect(() => {
+    let ok = true;
+    const loop = (now) => {
+      if (!ok) return;
+      const c = cv.current; if (!c) { raf.current = requestAnimationFrame(loop); return; }
+      const dpr = Math.min(2, window.devicePixelRatio || 1), rect = c.getBoundingClientRect();
+      if (c.width !== Math.round(rect.width * dpr)) { c.width = rect.width * dpr; c.height = rect.height * dpr; }
+      const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const w = rect.width, h = rect.height, cx = w / 2, cy = h / 2, M = Math.min(w, h);
+      g.fillStyle = "#010208"; g.fillRect(0, 0, w, h);
+      let s = 13; const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+      g.fillStyle = "#cdd8f0";
+      for (let i = 0; i < 90; i++) { g.globalAlpha = 0.2 + rnd() * 0.5; g.fillRect(rnd() * w, rnd() * h, 1.1, 1.1); }
+      g.globalAlpha = 1;
+      const v = val.current / 1000;
+      let i0 = 0; while (i0 < ST.length - 1 && ST[i0 + 1].p <= v) i0++;
+      const i1 = Math.min(ST.length - 1, i0 + 1);
+      const span = ST[i1].p - ST[i0].p || 1, bl = Math.max(0, Math.min(1, (v - ST[i0].p) / span));
+      const size = (ST[i0].size + (ST[i1].size - ST[i0].size) * bl) * M;
+      const stage = bl > 0.5 ? ST[i1] : ST[i0];
+      const nebA = (ST[i0].neb ? 1 - bl : 0) + (ST[i1].neb ? bl : 0);
+      const wdA = (ST[i0].wd ? 1 - bl : 0) + (ST[i1].wd ? bl : 0);
+      if (nebA > 0.02) {
+        for (let k = 0; k < 4; k++) {
+          const rr = M * (0.18 + k * 0.11) * (1 + (now / 9000) % 1 * 0.12);
+          g.strokeStyle = "rgba(" + (k % 2 ? "120,220,200" : "255,140,190") + "," + (0.3 * nebA * (1 - k * 0.18)).toFixed(3) + ")";
+          g.lineWidth = M * 0.035;
+          g.beginPath(); g.ellipse(cx, cy, rr, rr * 0.82, k, 0, 7); g.stroke();
+        }
+      }
+      if (wdA > 0.02) {
+        const r2 = Math.max(3, M * 0.03);
+        const gl = g.createRadialGradient(cx, cy, 0, cx, cy, r2 * 5);
+        gl.addColorStop(0, "rgba(210,230,255," + (0.75 * wdA).toFixed(3) + ")"); gl.addColorStop(1, "transparent");
+        g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, r2 * 5, 0, 7); g.fill();
+        g.fillStyle = "rgba(235,245,255," + wdA.toFixed(3) + ")"; g.beginPath(); g.arc(cx, cy, r2, 0, 7); g.fill();
+      }
+      if (nebA < 0.9 && wdA < 0.9) {
+        P.drawSunTextured(g, cx, cy, Math.max(6, size / 2), now / 40000);
+        const tint = stage.tint;
+        if (tint) { g.save(); g.globalCompositeOperation = "source-atop"; g.fillStyle = "rgba(" + tint + ")"; g.beginPath(); g.arc(cx, cy, size / 2 + 2, 0, 7); g.fill(); g.restore(); }
+      }
+      raf.current = requestAnimationFrame(loop);
+    };
+    raf.current = requestAnimationFrame(loop);
+    return () => { ok = false; cancelAnimationFrame(raf.current); };
+  }, []);
+
+  const onSlide = (e) => {
+    val.current = +e.target.value;
+    const v = val.current / 1000;
+    let ni = 0, nd = 9;
+    ST.forEach((st, i) => { const d = Math.abs(st.p - v); if (d < nd) { nd = d; ni = i; } });
+    if (ni !== stageIdx) setStageIdx(ni);
+  };
+
+  return React.createElement("div", { className: "evo-overlay" },
+    React.createElement("div", { className: "evo-card" },
+      React.createElement("button", { className: "evo-close", onClick: onClose }, "×"),
+      React.createElement("h3", null, "🕰 " + (fr ? "L'avenir du Soleil" : "The Sun's future")),
+      React.createElement("canvas", { className: "evo-canvas", ref: cv }),
+      React.createElement("input", { className: "evo-slider", type: "range", min: 0, max: 1000, defaultValue: 0, onInput: onSlide }),
+      React.createElement("div", { className: "evo-stage" }, ST[stageIdx].t),
+      React.createElement("p", { className: "evo-desc" }, ST[stageIdx].d)));
 }

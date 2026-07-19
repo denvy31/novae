@@ -10,9 +10,31 @@ function SpaceNews() {
   // langue de l'app (Google Translate), avec bascule VO possible
   const lang = I18N.get();
   const [translate, setTranslate] = useState(lang !== "en");
+  const [trMap, setTrMap] = useState(window.__nvNewsTr || {});
   const artUrl = (u) => (translate && lang !== "en")
     ? "https://translate.google.com/translate?sl=en&tl=" + lang + "&u=" + encodeURIComponent(u)
     : u;
+
+  // traduction RÉELLE des titres (API MyMemory, gratuite) quand « Traduit » est actif ;
+  // « VO » réaffiche les titres anglais d'origine
+  useEffect(() => {
+    if (!translate || lang === "en" || !articles) return;
+    const missing = articles.filter((a) => !(window.__nvNewsTr && window.__nvNewsTr[a.id]));
+    if (!missing.length) { setTrMap(window.__nvNewsTr || {}); return; }
+    let alive = true;
+    Promise.all(missing.map((a) =>
+      fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(a.title.slice(0, 450)) + "&langpair=en|" + lang)
+        .then((r) => r.json())
+        .then((j) => [a.id, (j && j.responseData && j.responseData.translatedText) || a.title])
+        .catch(() => [a.id, a.title])
+    )).then((entries) => {
+      if (!alive) return;
+      window.__nvNewsTr = Object.assign({}, window.__nvNewsTr);
+      entries.forEach(([id, t2]) => { window.__nvNewsTr[id] = t2; });
+      setTrMap(window.__nvNewsTr);
+    });
+    return () => { alive = false; };
+  }, [translate, articles, lang]);
 
   useEffect(() => {
     if (window.__nvNews) return;
@@ -40,7 +62,7 @@ function SpaceNews() {
         React.createElement("div", { className: "news-meta" },
           React.createElement("span", { className: "news-site" }, a.news_site),
           React.createElement("span", { className: "news-date" }, fmt(a.published_at))),
-        React.createElement("h4", { className: "news-title" }, a.title)))));
+        React.createElement("h4", { className: "news-title" }, (translate && lang !== "en" && trMap[a.id]) ? trMap[a.id] : a.title)))));
 }
 
 function EventsPanel() {
@@ -49,6 +71,7 @@ function EventsPanel() {
   const I18N = window.NV_I18N;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [filter, setFilter] = useState("Tous");
+  const [open, setOpen] = useState(null); // événement déplié (détails complets)
 
   const types = ["Tous", ...Array.from(new Set(NV.events.map((e) => e.type)))];
 
@@ -71,17 +94,24 @@ function EventsPanel() {
 
     React.createElement("div", { className: "events-list" },
       list.map((e, i) =>
-        React.createElement("div", { key: i, className: "event-card" },
+        // carte cliquable : se déplie pour montrer où/quand/comment observer, en détail
+        React.createElement("div", {
+          key: i, className: "event-card clickable" + (open === i ? " open" : ""),
+          onClick: () => setOpen(open === i ? null : i),
+        },
           React.createElement("div", { className: "event-icon" }, e.icon),
           React.createElement("div", { className: "event-body" },
             React.createElement("div", { className: "event-top" },
               React.createElement("span", { className: "event-type" }, e.type),
               React.createElement("span", { className: "event-date" },
-                e.d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" }))
+                e.d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" })),
+              React.createElement("span", { className: "event-chevron" }, open === i ? "▾" : "▸")
             ),
             React.createElement("h4", null, e.title),
             React.createElement("p", null, e.desc),
-            e.where && React.createElement("p", { className: "event-where" }, "📍 " + e.where)
+            open === i && React.createElement(React.Fragment, null,
+              e.where && React.createElement("p", { className: "event-where" }, "📍 " + e.where),
+              e.more && React.createElement("p", { className: "event-more" }, e.more))
           ),
           React.createElement("div", { className: "event-countdown" },
             e.days < 0
