@@ -288,7 +288,8 @@ function SkyMap() {
       ctx.strokeStyle = "rgba(120,170,255,0.30)"; ctx.lineWidth = 1;
       f.lines.forEach((seg) => { ctx.beginPath(); let st = false; for (let i = 0; i < seg.length; i++) { const v2 = seg[i]; const p = v2[1] < minAlt ? null : project(v2[0], v2[1], w, h); if (!p) { st = false; continue; } if (!st) { ctx.moveTo(p[0], p[1]); st = true; } else ctx.lineTo(p[0], p[1]); } ctx.stroke(); });
     }
-    if (showLabels && zoomF < 9) {
+    // noms de constellations liés au calque « Constellations » : calque coupé = AUCUN nom
+    if (showLines && showLabels && zoomF < 9) {
       ctx.fillStyle = "rgba(125,165,255,0.5)"; ctx.font = "italic 12px Georgia, serif"; ctx.textAlign = "center";
       f.names.forEach((n) => { if (n.rank > 2 && zoomF < 1.4) return; if (n.alt < minAlt) return; const p = project(n.az, n.alt, w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) return; ctx.fillText((n.name || "").toUpperCase(), p[0], p[1]); });
       ctx.textAlign = "left";
@@ -296,7 +297,9 @@ function SkyMap() {
 
     // aimed/hovered constellation: highlight the figure + show its name
     canvas._consts = [];
-    if (f.consts) {
+    // surlignage/visée des constellations UNIQUEMENT si le calque est actif
+    // (avant : la figure + son nom apparaissaient en mode suivi même calque coupé)
+    if (showLines && f.consts) {
       for (let ci = 0; ci < f.consts.length; ci++) { const c = f.consts[ci]; if (c.centroid[1] < minAlt) continue; const cp = project(c.centroid[0], c.centroid[1], w, h); if (cp && cp[0] >= 0 && cp[0] <= w && cp[1] >= 0 && cp[1] <= h) canvas._consts.push({ x: cp[0], y: cp[1], idx: ci }); }
       const hi = hoveredConst.current;
       if (hi >= 0 && hi < f.consts.length) {
@@ -329,10 +332,10 @@ function SkyMap() {
       if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)); P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
       f.bodies.forEach((b) => {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
-        // planète sous le curseur : grossie ×2.3 et rotation en temps réel
+        // planètes plus grandes, en rotation permanente sur elles-mêmes ; survol = ×2 + rotation rapide
         const isHov = hoverPlanetRef.current === b.pl.name;
-        const pl = b.pl, basePr = Math.max(3, Math.min(8, Math.pow(pl.diam, 0.27) / 3.2)), pr = basePr * Math.max(0.7, Math.min(3.2, zoomF)) * (isHov ? 2.3 : 1), light = lightTo(p);
-        const rotNow = isHov ? (performance.now() / 16000) % 1 : 0.2;
+        const pl = b.pl, basePr = Math.max(4, Math.min(10, Math.pow(pl.diam, 0.27) / 2.8)), pr = basePr * Math.max(0.9, Math.min(3.2, zoomF)) * (isHov ? 2 : 1), light = lightTo(p);
+        const rotNow = (performance.now() / (isHov ? 14000 : 45000)) % 1;
         // texture réelle dès que la planète est assez grande pour la voir (fini les boules colorées)
         if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, rotNow, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
         else { P.drawBall(ctx, p[0], p[1], pr, pl.color, light); if (pl.rings) { ctx.strokeStyle = "rgba(220,205,160,0.8)"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(p[0], p[1], pr * 2, pr * 0.7, 0.5, 0, 7); ctx.stroke(); } }

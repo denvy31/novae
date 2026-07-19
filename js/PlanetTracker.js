@@ -174,7 +174,7 @@ function PlanetTracker(props) {
         React.createElement("button", { className: "chip rt-btn" + (speed < 0.01 && speed > 0 ? " on" : ""), onClick: () => setSpeed(1 / 86400) }, "⏱ " + (lang === "fr" ? "Temps réel" : "Real time")),
         React.createElement("input", { type: "range", min: 0, max: 365, step: 1, value: Math.round(speed), onChange: (e) => setSpeed(Number(e.target.value)) }),
         React.createElement("span", { className: "speed-val" }, speed === 0 ? tr("pl_pause") : speed < 0.01 ? (lang === "fr" ? "Temps réel" : "Real time") : "×" + Math.round(speed * 86400).toLocaleString(I18N.locale())),
-        React.createElement("button", { className: "chip", onClick: () => setEvoOpen(true) }, "🕰 " + (lang === "fr" ? "Évolution du Soleil" : "Sun's future"))),
+        React.createElement("button", { className: "chip evo-btn", onClick: () => setEvoOpen(true) }, "🕰 " + (lang === "fr" ? "Évolution → trou noir" : "Evolution → black hole"))),
       evoOpen && React.createElement(SunEvolution, { lang, onClose: () => setEvoOpen(false) })
     ),
 
@@ -226,8 +226,9 @@ function SunEvolution({ lang, onClose }) {
     { p: 0.18, t: fr ? "+1 milliard d'années" : "+1 billion years", d: fr ? "Le Soleil brille ~10 % plus fort : les océans de la Terre s'évaporent." : "The Sun shines ~10% brighter: Earth's oceans evaporate.", size: 0.17, tint: "255,245,220,0.15" },
     { p: 0.45, t: fr ? "+5 milliards d'années" : "+5 billion years", d: fr ? "L'hydrogène du cœur s'épuise : le Soleil enfle en sous-géante orange." : "Core hydrogen runs out: the Sun swells into an orange subgiant.", size: 0.3, tint: "255,170,80,0.22" },
     { p: 0.68, t: fr ? "+6,5 Md — GÉANTE ROUGE" : "+6.5 billion — RED GIANT", d: fr ? "~200 fois sa taille : Mercure et Vénus sont englouties. Depuis la Terre, le Soleil remplirait la moitié du ciel." : "~200× its size: Mercury and Venus are engulfed. From Earth, the Sun would fill half the sky.", size: 0.92, tint: "255,90,40,0.35" },
-    { p: 0.86, t: fr ? "+7,5 Md — nébuleuse planétaire" : "+7.5 billion — planetary nebula", d: fr ? "Les couches externes sont soufflées en voiles de gaz colorés : le cœur nu se dévoile." : "The outer layers blow away into glowing gas shells: the bare core is revealed.", size: 0.1, neb: true },
-    { p: 1, t: fr ? "+8 Md — NAINE BLANCHE" : "+8 billion — WHITE DWARF", d: fr ? "Le Soleil finit en naine blanche grande comme la Terre, refroidissant pendant des milliards d'années. ⚠️ Il ne deviendra JAMAIS un trou noir : il faudrait une étoile au moins 20 fois plus massive." : "The Sun ends as an Earth-sized white dwarf, cooling for billions of years. ⚠️ It will NEVER become a black hole: that takes a star at least 20× more massive.", size: 0.035, wd: true },
+    { p: 0.75, t: fr ? "+7,5 Md — nébuleuse planétaire" : "+7.5 billion — planetary nebula", d: fr ? "Les couches externes sont soufflées en voiles de gaz colorés : le cœur nu se dévoile." : "The outer layers blow away into glowing gas shells: the bare core is revealed.", size: 0.1, neb: true },
+    { p: 0.88, t: fr ? "+8 Md — NAINE BLANCHE" : "+8 billion — WHITE DWARF", d: fr ? "Le Soleil finit en naine blanche grande comme la Terre, refroidissant pendant des milliards d'années. ⚠️ Il ne deviendra JAMAIS un trou noir : il faudrait une étoile au moins 20 fois plus massive." : "The Sun ends as an Earth-sized white dwarf, cooling for billions of years. ⚠️ It will NEVER become a black hole: that takes a star at least 20× more massive.", size: 0.035, wd: true },
+    { p: 1, t: fr ? "BONUS — le destin TROU NOIR" : "BONUS — the BLACK HOLE fate", d: fr ? "Et une étoile de plus de 20-25 masses solaires ? Après sa supernova, son cœur s'effondre en TROU NOIR : un disque de gaz surchauffé tourbillonne autour d'un horizon d'où rien ne s'échappe, pas même la lumière. C'est la fin que notre Soleil, trop léger, ne connaîtra jamais." : "And a star over 20–25 solar masses? After its supernova, its core collapses into a BLACK HOLE: superheated gas swirls around a horizon from which nothing escapes, not even light. A fate our Sun, too light, will never meet.", size: 0.05, bh: true },
   ];
 
   useEffect(() => {
@@ -252,6 +253,24 @@ function SunEvolution({ lang, onClose }) {
       const stage = bl > 0.5 ? ST[i1] : ST[i0];
       const nebA = (ST[i0].neb ? 1 - bl : 0) + (ST[i1].neb ? bl : 0);
       const wdA = (ST[i0].wd ? 1 - bl : 0) + (ST[i1].wd ? bl : 0);
+      const bhA = (ST[i0].bh ? 1 - bl : 0) + (ST[i1].bh ? bl : 0);
+      // TROU NOIR : disque d'accrétion tourbillonnant + anneau de photons + horizon noir
+      if (bhA > 0.02) {
+        const rb = M * 0.075;
+        for (let k = 5; k >= 0; k--) {
+          const rr = rb * (1.5 + k * 0.55), sw = (now / 2600 + k * 0.9) % (Math.PI * 2);
+          g.strokeStyle = "rgba(" + (k < 2 ? "255,240,215" : k < 4 ? "255,170,80" : "200,80,40") + "," + (0.6 * bhA * (1 - k * 0.13)).toFixed(3) + ")";
+          g.lineWidth = rb * 0.34;
+          g.beginPath(); g.ellipse(cx, cy, rr, rr * 0.26, 0, sw, sw + 4.6); g.stroke();
+        }
+        const lens = g.createRadialGradient(cx, cy - rb * 1.15, 0, cx, cy - rb * 1.15, rb * 1.6);
+        lens.addColorStop(0, "rgba(255,200,130," + (0.4 * bhA).toFixed(3) + ")"); lens.addColorStop(1, "transparent");
+        g.fillStyle = lens; g.beginPath(); g.arc(cx, cy - rb * 1.15, rb * 1.6, 0, 7); g.fill();
+        g.strokeStyle = "rgba(255,250,240," + (0.9 * bhA).toFixed(3) + ")"; g.lineWidth = 1.6;
+        g.beginPath(); g.arc(cx, cy, rb * 1.08, 0, 7); g.stroke();
+        g.fillStyle = "rgba(0,0,0," + Math.min(1, bhA * 1.2).toFixed(3) + ")";
+        g.beginPath(); g.arc(cx, cy, rb, 0, 7); g.fill();
+      }
       if (nebA > 0.02) {
         for (let k = 0; k < 4; k++) {
           const rr = M * (0.18 + k * 0.11) * (1 + (now / 9000) % 1 * 0.12);
@@ -267,7 +286,7 @@ function SunEvolution({ lang, onClose }) {
         g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, r2 * 5, 0, 7); g.fill();
         g.fillStyle = "rgba(235,245,255," + wdA.toFixed(3) + ")"; g.beginPath(); g.arc(cx, cy, r2, 0, 7); g.fill();
       }
-      if (nebA < 0.9 && wdA < 0.9) {
+      if (nebA < 0.9 && wdA < 0.9 && bhA < 0.5) {
         P.drawSunTextured(g, cx, cy, Math.max(6, size / 2), now / 40000);
         const tint = stage.tint;
         if (tint) { g.save(); g.globalCompositeOperation = "source-atop"; g.fillStyle = "rgba(" + tint + ")"; g.beginPath(); g.arc(cx, cy, size / 2 + 2, 0, 7); g.fill(); g.restore(); }
