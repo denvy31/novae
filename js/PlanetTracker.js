@@ -193,6 +193,10 @@ function PlanetTracker(props) {
       React.createElement("p", { className: "info-note" }, selected.fact),
       selected.moons.length > 0 && React.createElement("p", { className: "hint" }, tr("pl_moons_shown") + " " + selected.moons.map((m) => m.name).join(", ")),
       React.createElement("p", { className: "hint" }, "🔍 Molette / pincez pour zoomer · double-clic : réinitialiser"),
+      !selected.sun && React.createElement("p", { className: "hint ua-hint" },
+        "💡 UA = unité astronomique, la distance Terre–Soleil (≈ 150 millions de km). " +
+        (selected.name === "Terre" ? "La Terre est donc à 1 UA par définition."
+          : pname(selected.name) + " à " + selected.a + " UA est donc " + selected.a + " fois plus loin du Soleil que la Terre.")),
       React.createElement("p", { className: "hint" }, tr("pl_hint"))
     )
   );

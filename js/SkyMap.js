@@ -34,10 +34,22 @@ function SkyMap() {
   const chAnchor = useRef(null); // iOS : décalage gyro→nord ancré une fois (mouvement fluide, zéro saut)
   const lastEvt = useRef(0);     // chien de garde : iOS coupe parfois les capteurs (rotation écran, retour d'onglet)
   const lastReattach = useRef(0);
-  // secours utilisateur : certains téléphones ont un cap inversé de 180° (capteur/coque) —
-  // bascule mémorisée « N/S inversés » dans le menu ⚙
-  const azFlipRef = useRef(null);
-  if (azFlipRef.current === null) { try { azFlipRef.current = localStorage.getItem("novae-azflip") === "1"; } catch (e) { azFlipRef.current = false; } }
+  // secours utilisateur : selon le montage du capteur, le cap peut être tourné de 180° OU en
+  // miroir (que +180° ne corrige PAS). 4 modes cyclables, mémorisés : normal / +180° /
+  // miroir E-O (az→−az) / miroir N-S (az→180−az).
+  const azModeRef = useRef(null);
+  if (azModeRef.current === null) {
+    try {
+      const m = parseInt(localStorage.getItem("novae-azmode") || "", 10);
+      azModeRef.current = m >= 0 && m <= 3 ? m : (localStorage.getItem("novae-azflip") === "1" ? 1 : 0);
+    } catch (e) { azModeRef.current = 0; }
+  }
+  const AZMODES = ["Normal", "+180°", "Miroir E-O", "Miroir N-S"];
+  const azApply = (az) => {
+    const m = azModeRef.current;
+    if (m === 1) az += 180; else if (m === 2) az = -az; else if (m === 3) az = 180 - az;
+    return az;
+  };
   const hoverRef = useRef(null); // hover tooltip element
   const hoveredConst = useRef(-1); // constellation under the cursor / reticle
   const previewRef = useRef(null); // planet icon preview element
@@ -305,11 +317,12 @@ function SkyMap() {
     if (f.sun && f.sun.alt >= minAlt) sunP = project(f.sun.az, f.sun.alt, w, h);
     const lightTo = (p) => { if (sunP) { const dx = sunP[0] - p[0], dy = sunP[1] - p[1], d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; } return { x: -0.55, y: -0.55 }; };
     if (showPlanets) {
-      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(5, zoomF)); P.drawSun(ctx, sunP[0], sunP[1], sr); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
-      if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(6, zoomF)); P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
+      // tailles plafonnées : les astres restent des repères élégants, jamais des ballons plein écran
+      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(2.4, zoomF)); P.drawSun(ctx, sunP[0], sunP[1], sr); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
+      if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)); P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
       f.bodies.forEach((b) => {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
-        const pl = b.pl, basePr = Math.max(3, Math.min(8, Math.pow(pl.diam, 0.27) / 3.2)), pr = basePr * Math.max(0.7, Math.min(9, zoomF)), light = lightTo(p);
+        const pl = b.pl, basePr = Math.max(3, Math.min(8, Math.pow(pl.diam, 0.27) / 3.2)), pr = basePr * Math.max(0.7, Math.min(3.2, zoomF)), light = lightTo(p);
         // texture réelle dès que la planète est assez grande pour la voir (fini les boules colorées)
         if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, 0.2, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
         else { P.drawBall(ctx, p[0], p[1], pr, pl.color, light); if (pl.rings) { ctx.strokeStyle = "rgba(220,205,160,0.8)"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(p[0], p[1], pr * 2, pr * 0.7, 0.5, 0, 7); ctx.stroke(); } }
@@ -500,8 +513,8 @@ function SkyMap() {
     const mx = e.clientX - rect.left, my = e.clientY - rect.top, hit = canvas._hit || {};
     const near = (arr) => { let best = null, bd = 1e9; (arr || []).forEach((c) => { const d = (c.x - mx) ** 2 + (c.y - my) ** 2; if (d < c.r * c.r && d < bd) { bd = d; best = c; } }); return best; };
     let H;
-    // planète touchée → même fiche compacte que les étoiles (plus de panneau envahissant)
-    if ((H = near(hit.planets))) { setSelected({ kind: H.kind, data: H.data, ra: H.ra, dec: H.dec }); zoomToRaDec(H.ra, H.dec, H.kind === "sun" || H.kind === "moon" ? initScale.current * 6 : initScale.current * 10); return; }
+    // planète touchée → fiche compacte, SANS zoom (le zoom géant donnait l'impression d'être coincé)
+    if ((H = near(hit.planets))) { setSelected({ kind: H.kind, data: H.data, ra: H.ra, dec: H.dec }); return; }
     if (hudRef.current !== null) { hudRef.current = null; setHud(null); } // tap elsewhere closes the planet panel
     if ((H = near(hit.sat))) { setSelected({ kind: "satellite", data: H.data }); return; }
     if ((H = near(hit.ds))) { setSelected({ kind: H.kind, data: H.data, ra: H.data.ra, dec: H.data.dec }); zoomToRaDec(H.data.ra, H.data.dec, view.current.scale * 2); return; }
@@ -589,7 +602,7 @@ function SkyMap() {
       window.addEventListener("deviceorientation", handleOrientation, true);
     }
     if (o.az != null) {
-      const taz = ((o.az + azOffset.current + (azFlipRef.current ? 180 : 0)) % 360 + 360) % 360; // + calibrage manuel + inversion N/S éventuelle
+      const taz = ((azApply(o.az) + azOffset.current) % 360 + 360) % 360; // mode boussole + calibrage manuel
       const talt = Math.max(-89, Math.min(89, o.alt + altOffset.current));
       let d = taz - v.az; if (d > 180) d -= 360; if (d < -180) d += 360;
       // lissage adaptatif : filtre le tremblement de la boussole quand on vise (petits écarts),
@@ -709,9 +722,9 @@ function SkyMap() {
         chip("📱 " + (motion ? I18N.t("sky_follow_on") : I18N.t("sky_follow")), motion, toggleFollow, " chip-ar"),
         motion && React.createElement("button", { className: "jump-btn", onClick: recalibrate }, "🧭 Recalibrer"),
         motion && React.createElement("button", {
-          className: "jump-btn", title: "Si le sud indique le nord, touchez ici (mémorisé)",
-          onClick: () => { azFlipRef.current = !azFlipRef.current; try { localStorage.setItem("novae-azflip", azFlipRef.current ? "1" : "0"); } catch (e) {} rerender(); },
-        }, "↔ N/S inversés" + (azFlipRef.current ? " ✓" : " ?")),
+          className: "jump-btn", title: "Directions fausses ? Touchez plusieurs fois jusqu'à ce que N/S/E/O soient justes (mémorisé)",
+          onClick: () => { azModeRef.current = (azModeRef.current + 1) % 4; try { localStorage.setItem("novae-azmode", String(azModeRef.current)); } catch (e) {} rerender(); },
+        }, "🔄 Sens : " + AZMODES[azModeRef.current]),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🔭 " + I18N.t("sky_layers")),
         // Voie Lactée, ciel profond et sous-l'horizon : toujours actifs, plus de bascule
@@ -722,7 +735,7 @@ function SkyMap() {
         chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🧭 Regarder"),
-        [["N", 0, 25], ["E", 90, 25], ["S", 180, 35], ["O", 270, 25], ["Zénith", 180, 88]].map(([l, az, alt]) => React.createElement("button", { key: l, className: "jump-btn", onClick: () => lookAt(az, alt) }, l)),
+        [["N", 0, 25], ["E", 90, 25], ["S", 180, 35], ["O", 270, 25], ["Zénith", 180, 88], ["Pôle N ⭐", 0, 49], ["Pôle S ✚", 180, -45]].map(([l, az, alt]) => React.createElement("button", { key: l, className: "jump-btn", onClick: () => lookAt(az, alt) }, l)),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🕒 Heure"),
         React.createElement("div", { className: "clock-controls in-menu" },

@@ -6,7 +6,7 @@ function App() {
   // accès direct par URL : novae/#planets, #timeline, #bortle, #events, #library
   const [tab, setTab] = useState(() => {
     const h = (window.location.hash || "").replace("#", "");
-    return ["sky", "planets", "timeline", "bortle", "events", "library"].includes(h) ? h : "sky";
+    return ["sky", "planets", "timeline", "bortle", "events", "universe"].includes(h) ? h : "sky";
   });
   const [night, setNight] = useState(false);
   const [now, setNow] = useState(new Date());
@@ -42,7 +42,7 @@ function App() {
     { id: "timeline", icon: "⏳", label: tr("tab_timeline") },
     { id: "bortle", icon: "💡", label: tr("tab_bortle") },
     { id: "events", icon: "🔔", label: tr("tab_events") },
-    { id: "library", icon: "📷", label: tr("tab_library") },
+    { id: "universe", icon: "🎓", label: "Univers" },
   ];
 
   const titles = {
@@ -51,7 +51,7 @@ function App() {
     timeline: [tr("title_timeline"), tr("sub_timeline")],
     bortle: [tr("title_bortle"), tr("sub_bortle")],
     events: [tr("title_events"), tr("sub_events")],
-    library: [tr("title_library"), tr("sub_library")],
+    universe: ["Histoire de l'Univers", "Du Big Bang à la fin des temps · testez-vous avec le quiz"],
   };
 
   return React.createElement(
@@ -115,7 +115,7 @@ function App() {
       tab === "timeline" && React.createElement(TimelinePanel, { key: lang }),
       tab === "bortle" && React.createElement(LightPollution),
       tab === "events" && React.createElement(EventsPanel),
-      tab === "library" && React.createElement(LibraryPanel),
+      tab === "universe" && React.createElement(UniversePanel),
     ),
 
     React.createElement(
