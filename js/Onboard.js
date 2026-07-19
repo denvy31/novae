@@ -70,13 +70,16 @@ function Onboarding({ mode, lang, onLang, onDone }) {
     return () => { mounted = false; cancelAnimationFrame(raf); clearTimeout(tm); };
   }, [phase]);
 
-  // ---- Tutoriel : 5 étapes très simples ----
+  // ---- Tutoriel complet : utiliser l'app à son plein potentiel + à savoir / à désactiver ----
   const SLIDES = [
-    { icon: "📱", title: "Le ciel suit votre téléphone", txt: "Ouvrez l'onglet Ciel et levez votre téléphone : la carte s'aligne sur ce que vous visez. Le nom de l'astre pointé s'affiche en bas de l'écran." },
-    { icon: "⚙", title: "Tout se règle en bas à gauche", txt: "Le bouton ⚙ regroupe les calques (constellations, satellites…), les directions N/E/S/O, l'heure et la capture. Directions fausses ? Touchez « 🔄 Sens » jusqu'à ce que ce soit juste, puis glissez l'écran pour affiner — c'est mémorisé." },
-    { icon: "🪐", title: "Explorez les planètes", txt: "Dans l'onglet Planètes, touchez une planète (ou le Soleil !) sur son orbite : gros plan photoréaliste NASA, zoom à deux doigts, lunes en orbite." },
-    { icon: "⏳", title: "Remontez le temps", txt: "L'onglet Frise vous emmène du ciel de ce soir jusqu'au Big Bang, il y a 13,8 milliards d'années. Glissez le curseur et laissez-vous porter." },
-    { icon: "🎓", title: "Apprenez en jouant", txt: "L'onglet Univers raconte l'histoire (et le futur !) du cosmos, avec un quiz pour tester ce que vous avez retenu. Bonne exploration ! ✦" },
+    { icon: "📱", title: "Le ciel suit votre téléphone", txt: "Levez le téléphone : la carte s'aligne sur ce que vous visez, et le nom de l'astre pointé s'affiche en bas. Le suivi démarre tout seul — pour le couper, touchez 📱 en bas à gauche (votre choix est mémorisé)." },
+    { icon: "🧭", title: "Si les directions sont fausses", txt: "Dans ⚙ : touchez « 🔄 Sens » plusieurs fois jusqu'à ce que N/S/E/O soient justes, puis glissez l'écran pour aligner finement sur un repère réel (Lune, soleil couchant…) — mémorisé pour toujours. « Recalibrer » remet tout à zéro. Astuce : retirez les coques aimantées, elles faussent la boussole !" },
+    { icon: "⚙", title: "Personnalisez votre ciel", txt: "Le menu ⚙ permet d'activer ou désactiver : constellations, étiquettes, planètes, satellites 🛰 et le filtre supernovæ 💥. Vous y trouvez aussi les raccourcis N/E/S/O et les pôles, le voyage dans le temps (−1 h/+1 h/accéléré) et la capture 📸." },
+    { icon: "🔍", title: "Cherchez n'importe quel astre", txt: "La barre de recherche trouve étoiles, planètes, objets Messier, supernovæ… La carte se centre dessus. Touchez une étoile ou un satellite pour sa fiche — un tap à côté la referme." },
+    { icon: "🪐", title: "Explorez les planètes de près", txt: "Onglet Planètes : touchez une planète ou le Soleil sur son orbite. Gros plan photoréaliste NASA, zoom à deux doigts (double-tap pour réinitialiser), lunes en orbite. UA = distance Terre–Soleil (150 millions de km)." },
+    { icon: "⏳", title: "Remontez jusqu'au Big Bang", txt: "L'onglet Frise raconte 13,8 milliards d'années avec le curseur. En bas, « Qu'est-ce qui a créé le Big Bang ? » explique pas à pas ce que la science sait… et ce qu'elle ignore." },
+    { icon: "💡", title: "Trouvez un bon ciel", txt: "Onglet Pollution : « 📍 Mon ciel est-il pollué ? » estime la qualité de votre ciel d'après votre position. L'onglet Événements vous dit quoi observer, où et quand — avec les actus spatiales traduites en français." },
+    { icon: "🎓", title: "À savoir, pour finir", txt: "L'onglet Univers + son quiz pour apprendre en jouant · l'app marche hors-ligne après le 1ᵉʳ chargement · « Ajouter à l'écran d'accueil » l'installe comme une vraie app · le bouton 🌐 change la langue. Bonne exploration ! ✦" },
   ];
 
   const pickLang = (code) => {

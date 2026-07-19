@@ -12,8 +12,8 @@ function App() {
   const [now, setNow] = useState(new Date());
   const [lang, setLangState] = useState(I18N.get());
   // premier lancement : on demande sa langue à l'utilisateur (modal plein écran, pas de menu déroulant)
-  // supernova à CHAQUE ouverture ; langue + tutoriel seulement au premier lancement ; 🌐 : langue seule
-  const [onboard, setOnboard] = useState(() => { try { return !localStorage.getItem("novae-lang") ? "full" : "boom"; } catch (e) { return "boom"; } });
+  // à CHAQUE ouverture : supernova → choix de langue → tutoriel (tout est passable en un tap)
+  const [onboard, setOnboard] = useState("full");
 
   // Horloge « ce soir » mise à jour régulièrement (signature Sky Tonight)
   useEffect(() => {
