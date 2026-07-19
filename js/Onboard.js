@@ -1,12 +1,10 @@
 /* Novaé — Accueil : explosion supernova + Bienvenue + choix de langue + tutoriel simple.
    mode "full" (premier lancement) : boom → langue → tuto. mode "lang" (bouton 🌐) : langue seule. */
 function Onboarding({ mode, lang, onLang, onDone }) {
-  // mode "full" : boom → langue → tuto (1er lancement) · "boom" : explosion seule (chaque
-  // ouverture) · "lang" : sélecteur de langue seul (bouton 🌐)
+  // mode "full" : boom → langue → (l'app démarre la visite guidée) · "lang" : langue seule (🌐)
   const { useState, useRef, useEffect } = React;
   const I18N = window.NV_I18N;
   const [phase, setPhase] = useState(mode === "lang" ? "lang" : "boom");
-  const [slide, setSlide] = useState(0);
   const cvs = useRef(null);
   const afterBoom = () => { if (mode === "full") setPhase("lang"); else onDone(); };
 
@@ -70,21 +68,11 @@ function Onboarding({ mode, lang, onLang, onDone }) {
     return () => { mounted = false; cancelAnimationFrame(raf); clearTimeout(tm); };
   }, [phase]);
 
-  // ---- Tutoriel complet : utiliser l'app à son plein potentiel + à savoir / à désactiver ----
-  const SLIDES = [
-    { icon: "📱", title: "Le ciel suit votre téléphone", txt: "Levez le téléphone : la carte s'aligne sur ce que vous visez, et le nom de l'astre pointé s'affiche en bas. Le suivi démarre tout seul — pour le couper, touchez 📱 en bas à gauche (votre choix est mémorisé)." },
-    { icon: "🧭", title: "Si les directions sont fausses", txt: "Dans ⚙ : touchez « 🔄 Sens » plusieurs fois jusqu'à ce que N/S/E/O soient justes, puis glissez l'écran pour aligner finement sur un repère réel (Lune, soleil couchant…) — mémorisé pour toujours. « Recalibrer » remet tout à zéro. Astuce : retirez les coques aimantées, elles faussent la boussole !" },
-    { icon: "⚙", title: "Personnalisez votre ciel", txt: "Le menu ⚙ permet d'activer ou désactiver : constellations, étiquettes, planètes, satellites 🛰 et le filtre supernovæ 💥. Vous y trouvez aussi les raccourcis N/E/S/O et les pôles, le voyage dans le temps (−1 h/+1 h/accéléré) et la capture 📸." },
-    { icon: "🔍", title: "Cherchez n'importe quel astre", txt: "La barre de recherche trouve étoiles, planètes, objets Messier, supernovæ… La carte se centre dessus. Touchez une étoile ou un satellite pour sa fiche — un tap à côté la referme." },
-    { icon: "🪐", title: "Explorez les planètes de près", txt: "Onglet Planètes : touchez une planète ou le Soleil sur son orbite. Gros plan photoréaliste NASA, zoom à deux doigts (double-tap pour réinitialiser), lunes en orbite. UA = distance Terre–Soleil (150 millions de km)." },
-    { icon: "⏳", title: "Remontez jusqu'au Big Bang", txt: "L'onglet Frise raconte 13,8 milliards d'années avec le curseur. En bas, « Qu'est-ce qui a créé le Big Bang ? » explique pas à pas ce que la science sait… et ce qu'elle ignore." },
-    { icon: "💡", title: "Trouvez un bon ciel", txt: "Onglet Pollution : « 📍 Mon ciel est-il pollué ? » estime la qualité de votre ciel d'après votre position. L'onglet Événements vous dit quoi observer, où et quand — avec les actus spatiales traduites en français." },
-    { icon: "🎓", title: "À savoir, pour finir", txt: "L'onglet Univers + son quiz pour apprendre en jouant · l'app marche hors-ligne après le 1ᵉʳ chargement · « Ajouter à l'écran d'accueil » l'installe comme une vraie app · le bouton 🌐 change la langue. Bonne exploration ! ✦" },
-  ];
-
+  // Après la langue : l'accueil se ferme et l'app démarre la VISITE GUIDÉE (voir App.js) —
+  // l'utilisateur découvre chaque fonctionnalité en direct, écran par écran.
   const pickLang = (code) => {
     onLang(code);
-    if (mode === "full") setPhase("tuto"); else onDone();
+    onDone();
   };
 
   return React.createElement("div", { className: "welcome-overlay" + (phase === "boom" ? " boom" : "") },
@@ -106,18 +94,5 @@ function Onboarding({ mode, lang, onLang, onDone }) {
           onClick: () => pickLang(l.code),
         },
           React.createElement("span", { className: "welcome-flag" }, l.flag),
-          React.createElement("span", null, l.name))))),
-
-    phase === "tuto" && React.createElement("div", { className: "welcome-card tuto-card" },
-      React.createElement("div", { className: "tuto-icon" }, SLIDES[slide].icon),
-      React.createElement("h3", null, SLIDES[slide].title),
-      React.createElement("p", { className: "tuto-txt" }, SLIDES[slide].txt),
-      React.createElement("div", { className: "tuto-dots" },
-        SLIDES.map((_, i) => React.createElement("span", { key: i, className: i === slide ? "on" : "" }))),
-      React.createElement("div", { className: "tuto-btns" },
-        React.createElement("button", { className: "chip", onClick: onDone }, "Passer"),
-        React.createElement("button", {
-          className: "chip on",
-          onClick: () => (slide + 1 < SLIDES.length ? setSlide(slide + 1) : onDone()),
-        }, slide + 1 < SLIDES.length ? "Suivant →" : "C'est parti 🚀"))));
+          React.createElement("span", null, l.name))))));
 }

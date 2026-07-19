@@ -8,12 +8,14 @@ function LightPollution() {
   const [locBusy, setLocBusy] = useState(false);
   const canvasRef = useRef(null);
   const info = NV.bortle[level - 1];
+  const fr = I18N.get() === "fr";
+  const T = (f, e) => (fr ? f : e);
 
   // Estime la pollution lumineuse de l'endroit où se trouve l'utilisateur :
   // GPS du téléphone → géocodage inverse (BigDataCloud, gratuit, CORS) → taille de la
   // localité → niveau de Bortle approché. Estimation honnête, pas une mesure satellite.
   const estimateHere = () => {
-    if (!navigator.geolocation) { setLocMsg({ err: "Géolocalisation indisponible sur cet appareil." }); return; }
+    if (!navigator.geolocation) { setLocMsg({ err: T("Géolocalisation indisponible sur cet appareil.", "Geolocation unavailable on this device.") }); return; }
     setLocBusy(true); setLocMsg(null);
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude, longitude } = pos.coords;
@@ -24,18 +26,18 @@ function LightPollution() {
           let pop = 0;
           try { (j.localityInfo.administrative || []).forEach((ad) => { if (ad.population && ad.population > pop && ad.adminLevel >= 7) pop = ad.population; }); } catch (e) {}
           let est; let why;
-          if (pop > 500000) { est = 8; why = "grande ville (" + Math.round(pop / 1000) + " k hab.)"; }
-          else if (pop > 100000) { est = 7; why = "ville importante (" + Math.round(pop / 1000) + " k hab.)"; }
-          else if (pop > 30000) { est = 6; why = "ville moyenne"; }
-          else if (pop > 8000) { est = 5; why = "petite ville"; }
-          else if (pop > 2000) { est = 4; why = "bourg / périphérie"; }
-          else if (pop > 0) { est = 3; why = "village / campagne"; }
-          else { est = city ? 6 : 4; why = city ? "zone urbaine" : "zone peu documentée"; }
+          if (pop > 500000) { est = 8; why = T("grande ville", "large city") + " (" + Math.round(pop / 1000) + T(" k hab.)", "k pop.)"); }
+          else if (pop > 100000) { est = 7; why = T("ville importante", "major town") + " (" + Math.round(pop / 1000) + T(" k hab.)", "k pop.)"); }
+          else if (pop > 30000) { est = 6; why = T("ville moyenne", "mid-size town"); }
+          else if (pop > 8000) { est = 5; why = T("petite ville", "small town"); }
+          else if (pop > 2000) { est = 4; why = T("bourg / périphérie", "outskirts / small town"); }
+          else if (pop > 0) { est = 3; why = T("village / campagne", "village / countryside"); }
+          else { est = city ? 6 : 4; why = city ? T("zone urbaine", "urban area") : T("zone peu documentée", "poorly documented area"); }
           setLevel(est); setLocBusy(false);
           setLocMsg({ place: city || (latitude.toFixed(2) + "°, " + longitude.toFixed(2) + "°"), est, why, polluted: est >= 5 });
         })
-        .catch(() => { setLocBusy(false); setLocMsg({ err: "Estimation impossible (hors-ligne ?)." }); });
-    }, () => { setLocBusy(false); setLocMsg({ err: "Position refusée — autorisez la localisation." }); }, { timeout: 10000 });
+        .catch(() => { setLocBusy(false); setLocMsg({ err: T("Estimation impossible (hors-ligne ?).", "Estimation failed (offline?).") }); });
+    }, () => { setLocBusy(false); setLocMsg({ err: T("Position refusée — autorisez la localisation.", "Location denied — please allow it.") }); }, { timeout: 10000 });
   };
 
   // visible stars shrink as Bortle rises
@@ -149,24 +151,26 @@ function LightPollution() {
 
       // Où suis-je ? — estimation basée sur la position du téléphone
       React.createElement("button", { className: "chip loc-estimate", onClick: estimateHere, disabled: locBusy },
-        locBusy ? "📍 Estimation…" : "📍 Mon ciel est-il pollué ?"),
+        locBusy ? T("📍 Estimation…", "📍 Estimating…") : T("📍 Mon ciel est-il pollué ?", "📍 Is my sky polluted?")),
       locMsg && locMsg.err && React.createElement("p", { className: "loc-result err" }, locMsg.err),
       locMsg && !locMsg.err && React.createElement("div", { className: "loc-result" },
         React.createElement("strong", null, locMsg.place),
-        React.createElement("p", null, "Estimation : Bortle ~" + locMsg.est + " (" + locMsg.why + ")"),
+        React.createElement("p", null, T("Estimation : Bortle ~", "Estimate: Bortle ~") + locMsg.est + " (" + locMsg.why + ")"),
         React.createElement("p", { className: locMsg.polluted ? "warn-txt" : "ok-txt" },
           locMsg.polluted
-            ? "⚠ Zone touchée par la pollution lumineuse — pour bien observer, éloignez-vous des éclairages (voir sites ci-dessous)."
-            : "✅ Zone plutôt préservée : bonnes conditions d'observation par nuit claire."),
-        React.createElement("p", { className: "loc-note" }, "Estimation d'après la taille de la localité, pas une mesure satellite.")),
+            ? T("⚠ Zone touchée par la pollution lumineuse — pour bien observer, éloignez-vous des éclairages (voir sites ci-dessous).", "⚠ Area affected by light pollution — for good viewing, get away from artificial lights (see sites below).")
+            : T("✅ Zone plutôt préservée : bonnes conditions d'observation par nuit claire.", "✅ Fairly dark area: good viewing conditions on clear nights.")),
+        React.createElement("p", { className: "loc-note" }, T("Estimation d'après la taille de la localité, pas une mesure satellite.", "Estimated from locality size, not a satellite measurement."))),
 
       // Qu'est-ce que l'échelle de Bortle ?
       React.createElement("div", { className: "bortle-explain" },
-        React.createElement("h4", null, "💡 C'est quoi, l'échelle de Bortle ?"),
+        React.createElement("h4", null, T("💡 C'est quoi, l'échelle de Bortle ?", "💡 What is the Bortle scale?")),
         React.createElement("p", null,
-          "Créée par l'astronome John Bortle en 2001, elle note la qualité du ciel nocturne de 1 (ciel parfaitement noir, en plein désert) à 9 (centre-ville illuminé). Plus il y a d'éclairage artificiel autour de vous, plus le ciel « brille » et masque les étoiles faibles, les nébuleuses et la Voie Lactée."),
+          T("Créée par l'astronome John Bortle en 2001, elle note la qualité du ciel nocturne de 1 (ciel parfaitement noir, en plein désert) à 9 (centre-ville illuminé). Plus il y a d'éclairage artificiel autour de vous, plus le ciel « brille » et masque les étoiles faibles, les nébuleuses et la Voie Lactée.",
+            "Created by astronomer John Bortle in 2001, it rates night-sky quality from 1 (perfectly dark desert sky) to 9 (bright city centre). The more artificial light around you, the more the sky “glows”, hiding faint stars, nebulae and the Milky Way.")),
         React.createElement("p", null,
-          "À quoi ça sert ? À savoir ce que vous pourrez réellement voir à l'œil nu ce soir, et à choisir un bon lieu d'observation : viser un site Bortle 4 ou moins change tout — la Voie Lactée redevient visible.")),
+          T("À quoi ça sert ? À savoir ce que vous pourrez réellement voir à l'œil nu ce soir, et à choisir un bon lieu d'observation : viser un site Bortle 4 ou moins change tout — la Voie Lactée redevient visible.",
+            "What is it for? Knowing what you'll actually see tonight with the naked eye, and picking a good observing spot: aiming for Bortle 4 or darker changes everything — the Milky Way becomes visible again."))),
 
       React.createElement("h4", null, I18N.t("lp_sites")),
       React.createElement("ul", { className: "site-list" },

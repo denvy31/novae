@@ -10,9 +10,9 @@ function TimelinePanel() {
   const [eraIdx, setEraIdx] = useState(7);
   const [showOrigin, setShowOrigin] = useState(false); // « Qu'est-ce qui a créé le Big Bang ? »
 
-  // Époques (chronologiques) — contenu FR par défaut, EN si langue anglaise
+  // Époques (chronologiques) — FR si l'app est en français, EN pour toutes les autres langues
   const ERAS = useMemo(() => {
-    const L = (fr, en) => (lang === "en" ? en : fr);
+    const L = (fr, en) => (lang === "fr" ? fr : en);
     return [
       { t: "t = 0", icon: "💥", title: L("Big Bang", "Big Bang"),
         desc: L("Origine de la chronologie. Toute la matière et l'énergie de l'Univers observable concentrées en un état extrêmement dense et chaud.",
@@ -352,7 +352,7 @@ function TimelinePanel() {
   const jumpTo = (i) => { sliderVal.current = (i / (N - 1)) * 1000; setEraIdx(i); };
 
   const era = ERAS[eraIdx];
-  const L = (fr, en) => (lang === "en" ? en : fr);
+  const L = (fr, en) => (lang === "fr" ? fr : en);
 
   return React.createElement("div", { className: "timeline-wrap" },
     React.createElement("div", { className: "tl-canvas-box" },
@@ -380,20 +380,20 @@ function TimelinePanel() {
       L("Note scientifique — on ne peut pas « filmer » le Big Bang : pendant ses 380 000 premières années, l'Univers était opaque. La première lumière observable est le fond diffus cosmologique. Novaé présente donc l'histoire de l'Univers comme une chronologie commentée.",
         "Science note — the Big Bang cannot be “filmed”: for its first 380,000 years the universe was opaque. The first observable light is the cosmic microwave background. Novaé therefore presents the history of the universe as an annotated chronology.")),
 
-    // Qu'est-ce qui a créé le Big Bang ? — explication progressive, sourcée
+    // Qu'est-ce qui a créé le Big Bang ? — explication progressive, sourcée (FR/EN)
     React.createElement("button", { className: "chip tl-origin-btn" + (showOrigin ? " on" : ""), onClick: () => setShowOrigin(!showOrigin) },
-      "💥 Qu'est-ce qui a créé le Big Bang ? " + (showOrigin ? "▾" : "▸")),
+      L("💥 Qu'est-ce qui a créé le Big Bang ? ", "💥 What created the Big Bang? ") + (showOrigin ? "▾" : "▸")),
     showOrigin && React.createElement("div", { className: "tl-origin" },
       [
-        ["1️⃣", "Ce que l'on SAIT", "L'Univers était il y a 13,8 milliards d'années dans un état extrêmement dense et chaud, et il est en expansion depuis — mesuré par la fuite des galaxies (Hubble, 1929) et confirmé par le fond diffus cosmologique découvert en 1965. Ça, ce sont des observations solides."],
-        ["2️⃣", "L'inflation cosmique", "Juste « avant » le Big Bang chaud, l'espace aurait subi une expansion fulgurante : l'inflation. En une fraction infime de seconde, l'Univers aurait grossi d'un facteur gigantesque. Quand l'inflation s'arrête, toute son énergie se déverse en matière et en lumière : c'est ce déversement qui EST le Big Bang chaud."],
-        ["3️⃣", "L'empreinte quantique", "Pendant l'inflation, d'infimes fluctuations quantiques — des tremblements du vide — ont été étirées à des tailles cosmiques. On les voit encore : ce sont les taches chaudes et froides du fond diffus, et elles ont donné naissance aux galaxies. Les mesures collent remarquablement aux prédictions."],
-        ["4️⃣", "Ce que l'on ne sait PAS", "Qu'y avait-il « avant » ? D'où vient l'énergie de l'inflation ? À l'instant zéro, nos lois physiques (relativité + quantique) cessent d'être valables — c'est le « mur de Planck ». Fluctuation quantique née « de rien », rebond d'un univers précédent, multivers : hypothèses sérieuses, mais aucune n'est encore testable. La science honnête s'arrête ici — pour l'instant."],
+        ["1️⃣", L("Ce que l'on SAIT", "What we KNOW"), L("L'Univers était il y a 13,8 milliards d'années dans un état extrêmement dense et chaud, et il est en expansion depuis — mesuré par la fuite des galaxies (Hubble, 1929) et confirmé par le fond diffus cosmologique découvert en 1965. Ça, ce sont des observations solides.", "13.8 billion years ago the universe was in an extremely dense, hot state, and it has been expanding ever since — measured through receding galaxies (Hubble, 1929) and confirmed by the cosmic microwave background discovered in 1965. These are solid observations.")],
+        ["2️⃣", L("L'inflation cosmique", "Cosmic inflation"), L("Juste « avant » le Big Bang chaud, l'espace aurait subi une expansion fulgurante : l'inflation. En une fraction infime de seconde, l'Univers aurait grossi d'un facteur gigantesque. Quand l'inflation s'arrête, toute son énergie se déverse en matière et en lumière : c'est ce déversement qui EST le Big Bang chaud.", "Just “before” the hot Big Bang, space is thought to have undergone a runaway expansion: inflation. In a tiny fraction of a second, the universe grew by a staggering factor. When inflation ends, all its energy pours into matter and light: that outpouring IS the hot Big Bang.")],
+        ["3️⃣", L("L'empreinte quantique", "The quantum imprint"), L("Pendant l'inflation, d'infimes fluctuations quantiques — des tremblements du vide — ont été étirées à des tailles cosmiques. On les voit encore : ce sont les taches chaudes et froides du fond diffus, et elles ont donné naissance aux galaxies. Les mesures collent remarquablement aux prédictions.", "During inflation, tiny quantum fluctuations — tremors of the vacuum — were stretched to cosmic sizes. We still see them: the hot and cold spots of the microwave background, which seeded the galaxies. Measurements match predictions remarkably well.")],
+        ["4️⃣", L("Ce que l'on ne sait PAS", "What we DON'T know"), L("Qu'y avait-il « avant » ? D'où vient l'énergie de l'inflation ? À l'instant zéro, nos lois physiques (relativité + quantique) cessent d'être valables — c'est le « mur de Planck ». Fluctuation quantique née « de rien », rebond d'un univers précédent, multivers : hypothèses sérieuses, mais aucune n'est encore testable. La science honnête s'arrête ici — pour l'instant.", "What was there “before”? Where did inflation's energy come from? At time zero our physical laws (relativity + quantum) break down — the “Planck wall”. A quantum fluctuation born “from nothing”, a bounce from a previous universe, a multiverse: serious hypotheses, none yet testable. Honest science stops here — for now.")],
       ].map((c, i) => React.createElement("div", { key: i, className: "tl-origin-card" },
         React.createElement("span", { className: "tl-origin-num" }, c[0]),
         React.createElement("div", null,
           React.createElement("h4", null, c[1]),
           React.createElement("p", null, c[2])))),
-      React.createElement("p", { className: "tl-origin-src" }, "Sources : NASA (théorie du Big Bang et inflation), observations du fond diffus cosmologique (COBE, WMAP, Planck), Guth (1981) — vulgarisé."))
+      React.createElement("p", { className: "tl-origin-src" }, L("Sources : NASA (théorie du Big Bang et inflation), observations du fond diffus cosmologique (COBE, WMAP, Planck), Guth (1981) — vulgarisé.", "Sources: NASA (Big Bang theory and inflation), cosmic microwave background observations (COBE, WMAP, Planck), Guth (1981) — popularized.")))
   );
 }

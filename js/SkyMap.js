@@ -63,7 +63,7 @@ function SkyMap() {
   const [showMilkyWay, setShowMilkyWay] = useState(true);
   const [showPlanets, setShowPlanets] = useState(true);
   const [showDeepSky, setShowDeepSky] = useState(true);   // actif d'office (désactivable dans ⚙)
-  const [showSats, setShowSats] = useState(true);
+  const [showSats, setShowSats] = useState(false);        // masqués par défaut (ciel épuré) — activables dans ⚙
   const [snFilter, setSnFilter] = useState(false);
   const [belowHorizon, setBelowHorizon] = useState(true); // actif d'office (désactivable dans ⚙)
   const [motion, setMotion] = useState(false);
@@ -79,6 +79,8 @@ function SkyMap() {
   const [query, setQuery] = useState(""); // recherche d'objets
 
   const FR2EN = { Mercure: "Mercury", Vénus: "Venus", Mars: "Mars", Jupiter: "Jupiter", Saturne: "Saturn", Uranus: "Uranus", Neptune: "Neptune", Pluton: "Pluto" };
+  // français si l'app est en français, anglais pour toutes les autres langues
+  const L2 = (fr, en) => (window.NV_I18N.get() === "fr" ? fr : en);
 
   const named = useMemo(() => {
     const arr = [];
@@ -721,11 +723,11 @@ function SkyMap() {
       React.createElement("div", { className: "layer-panel sky-menu" },
         // suivi du téléphone : activé à l'ouverture, désactivable ici (choix mémorisé)
         chip("📱 " + (motion ? I18N.t("sky_follow_on") : I18N.t("sky_follow")), motion, toggleFollow, " chip-ar"),
-        motion && React.createElement("button", { className: "jump-btn", onClick: recalibrate }, "🧭 Recalibrer"),
+        motion && React.createElement("button", { className: "jump-btn", onClick: recalibrate }, "🧭 " + L2("Recalibrer", "Recalibrate")),
         motion && React.createElement("button", {
-          className: "jump-btn", title: "Directions fausses ? Touchez plusieurs fois jusqu'à ce que N/S/E/O soient justes (mémorisé)",
+          className: "jump-btn", title: L2("Directions fausses ? Touchez plusieurs fois jusqu'à ce que N/S/E/O soient justes (mémorisé)", "Wrong directions? Tap until N/S/E/W are correct (saved)"),
           onClick: () => { azModeRef.current = (azModeRef.current + 1) % 4; try { localStorage.setItem("novae-azmode", String(azModeRef.current)); } catch (e) {} rerender(); },
-        }, "🔄 Sens : " + AZMODES[azModeRef.current]),
+        }, "🔄 " + L2("Sens", "Mode") + " : " + [L2("Normal", "Normal"), "+180°", L2("Miroir E-O", "Mirror E-W"), L2("Miroir N-S", "Mirror N-S")][azModeRef.current]),
         React.createElement("div", { className: "layer-sep" }),
         React.createElement("div", { className: "menu-title" }, "🔭 " + I18N.t("sky_layers")),
         // Voie Lactée, ciel profond et sous-l'horizon : toujours actifs, plus de bascule
@@ -735,19 +737,18 @@ function SkyMap() {
         chip("🛰 " + I18N.t("sky_satellites"), showSats, () => setShowSats(!showSats)),
         chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),
         React.createElement("div", { className: "layer-sep" }),
-        React.createElement("div", { className: "menu-title" }, "🧭 Regarder"),
-        [["N", 0, 25], ["E", 90, 25], ["S", 180, 35], ["O", 270, 25], ["Zénith", 180, 88], ["Pôle N ⭐", 0, 49], ["Pôle S ✚", 180, -45]].map(([l, az, alt]) => React.createElement("button", { key: l, className: "jump-btn", onClick: () => lookAt(az, alt) }, l)),
+        React.createElement("div", { className: "menu-title" }, "🧭 " + L2("Regarder", "Look at")),
+        [["N", 0, 25], ["E", 90, 25], ["S", 180, 35], [L2("O", "W"), 270, 25], [L2("Zénith", "Zenith"), 180, 88], [L2("Pôle N ⭐", "N pole ⭐"), 0, 49], [L2("Pôle S ✚", "S pole ✚"), 180, -45]].map(([l, az, alt]) => React.createElement("button", { key: l, className: "jump-btn", onClick: () => lookAt(az, alt) }, l)),
         React.createElement("div", { className: "layer-sep" }),
-        React.createElement("div", { className: "menu-title" }, "🕒 Heure"),
+        React.createElement("div", { className: "menu-title" }, "🕒 " + L2("Heure", "Time")),
         React.createElement("div", { className: "clock-controls in-menu" },
           React.createElement("button", { onClick: () => shiftHours(-1) }, "−1 h"),
           React.createElement("span", { className: "clock-label" }, clockLabel),
           React.createElement("button", { onClick: () => shiftHours(1) }, "+1 h"),
           React.createElement("button", { className: lapse ? "on" : "", onClick: toggleLapse }, lapse ? "⏸" : "⏩"),
-          React.createElement("button", { onClick: setLive }, "Maintenant")),
+          React.createElement("button", { onClick: setLive }, L2("Maintenant", "Now"))),
         React.createElement("div", { className: "layer-sep" }),
-        React.createElement("button", { className: "loc-chip", onClick: useMyLocation }, "📍 " + obs.current.lat.toFixed(2) + "°, " + obs.current.lon.toFixed(2) + "° · " + obs.current.label),
-        React.createElement("button", { className: "chip", onClick: capture }, "📸 Capturer le ciel")
+        React.createElement("button", { className: "loc-chip", onClick: useMyLocation }, "📍 " + obs.current.lat.toFixed(2) + "°, " + obs.current.lon.toFixed(2) + "° · " + obs.current.label)
       )
     ),
     React.createElement("div", { className: "sky-zoom" },
@@ -772,22 +773,29 @@ function SkyMap() {
 
 // Étiquette de visée : juste le nom dans un cadre élégant en bas d'écran (zéro pollution)
 function AimLabel({ info }) {
-  const SAT_DESC = {
+  const fr = window.NV_I18N.get() === "fr";
+  const SAT_DESC = fr ? {
     ISS: "Station spatiale internationale · ~400 km", Hubble: "Télescope spatial · lancé en 1990",
     Tiangong: "Station spatiale chinoise", "NOAA 15": "Satellite météorologique",
     "NOAA 18": "Satellite météorologique", "NOAA 19": "Satellite météorologique",
     Terra: "Observation de la Terre (NASA)", Aqua: "Observation de la Terre (NASA)",
     "Landsat 8": "Imagerie terrestre (NASA/USGS)",
+  } : {
+    ISS: "International Space Station · ~400 km", Hubble: "Space telescope · launched 1990",
+    Tiangong: "Chinese space station", "NOAA 15": "Weather satellite",
+    "NOAA 18": "Weather satellite", "NOAA 19": "Weather satellite",
+    Terra: "Earth observation (NASA)", Aqua: "Earth observation (NASA)",
+    "Landsat 8": "Earth imaging (NASA/USGS)",
   };
   let desc = null;
-  if (info.kind === "satellite") desc = SAT_DESC[info.name] || "Satellite artificiel";
-  else if (info.kind === "sun") desc = "Notre étoile · naine jaune G2V";
-  else if (info.kind === "moon") desc = "Satellite naturel de la Terre";
-  else if (info.kind === "planet") desc = info.data.dwarf ? "Planète naine · " + info.data.a + " UA" : (info.data.fact || "").split(".")[0];
-  else if (info.kind === "star") desc = info.data && info.data.mag != null ? "Étoile · magnitude " + info.data.mag : "Étoile";
-  else if (info.kind === "const") desc = "Constellation";
-  else if (info.kind === "messier") desc = "Objet du ciel profond (Messier)";
-  else if (info.kind === "blackhole") desc = "Trou noir";
+  if (info.kind === "satellite") desc = SAT_DESC[info.name] || (fr ? "Satellite artificiel" : "Artificial satellite");
+  else if (info.kind === "sun") desc = fr ? "Notre étoile · naine jaune G2V" : "Our star · G2V yellow dwarf";
+  else if (info.kind === "moon") desc = fr ? "Satellite naturel de la Terre" : "Earth's natural satellite";
+  else if (info.kind === "planet") desc = info.data.dwarf ? (fr ? "Planète naine · " : "Dwarf planet · ") + info.data.a + " UA" : (fr ? (info.data.fact || "").split(".")[0] : (window.NV_I18N.planet(info.data.name) !== info.data.name ? "Planet · " + info.data.a + " AU from the Sun" : "Planet"));
+  else if (info.kind === "star") desc = info.data && info.data.mag != null ? (fr ? "Étoile · magnitude " : "Star · magnitude ") + info.data.mag : (fr ? "Étoile" : "Star");
+  else if (info.kind === "const") desc = fr ? "Constellation" : "Constellation";
+  else if (info.kind === "messier") desc = fr ? "Objet du ciel profond (Messier)" : "Deep-sky object (Messier)";
+  else if (info.kind === "blackhole") desc = fr ? "Trou noir" : "Black hole";
 
   return React.createElement("div", { className: "aim-pill" },
     React.createElement("div", { className: "aim-pill-name" }, info.name),
