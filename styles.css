@@ -908,8 +908,9 @@ p { line-height: 1.55; }
 .boom-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .boom-title { position: relative; text-align: center; z-index: 2; animation: boomIn 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: 0.55s; }
 @keyframes boomIn { from { opacity: 0; transform: scale(0.55); } }
-.boom-logo { font-size: 54px; text-shadow: 0 0 24px var(--accent), 0 0 60px var(--accent2); }
-.boom-title h1 { font-size: 44px; letter-spacing: 12px; margin: 6px 0 4px; text-shadow: 0 0 30px rgba(140,180,255,0.8); }
+.boom-logo { font-size: 54px; text-shadow: 0 0 24px var(--accent), 0 0 60px var(--accent2); animation: boomPulse 2.6s ease-in-out 1.9s infinite; }
+.boom-title h1 { font-size: 44px; letter-spacing: 12px; margin: 6px 0 4px; text-shadow: 0 0 30px rgba(140,180,255,0.8); animation: boomPulse 2.6s ease-in-out 1.9s infinite; }
+@keyframes boomPulse { 50% { text-shadow: 0 0 42px rgba(140,180,255,1), 0 0 70px rgba(185,139,255,0.6); } }
 .boom-title p { color: #cfe0ff; font-size: 15px; letter-spacing: 2px; }
 .boom-skip { margin-top: 26px; opacity: 0.75; }
 .boom-skip:hover { opacity: 1; }

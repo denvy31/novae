@@ -317,7 +317,7 @@ function SkyMap() {
     if (showPlanets) {
       // tailles plafonnées + multiplicateur réglable par l'utilisateur (menu ⚙ « Taille planètes »)
       const szK = planetSizeRef.current;
-      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(2.4, zoomF)) * szK; P.drawSun(ctx, sunP[0], sunP[1], sr); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
+      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(2.4, zoomF)) * szK; P.drawSunTextured(ctx, sunP[0], sunP[1], sr, performance.now() / 3000000, 0); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
       if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)) * szK; P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
       f.bodies.forEach((b) => {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
@@ -452,7 +452,7 @@ function SkyMap() {
     if (c.width !== Math.round(S * dpr)) { c.width = S * dpr; c.height = S * dpr; }
     const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, S, S);
     const mid = S / 2;
-    if (kind === "sun") P.drawSun(ctx, mid, mid, S * 0.3);
+    if (kind === "sun") P.drawSunTextured(ctx, mid, mid, S * 0.3, performance.now() / 3000000, 0);
     else { const R = S * (data.rings ? 0.3 : 0.38), light = { x: -0.5, y: -0.5 }; if (data.rings) P.drawRings(ctx, mid, mid, R, light, false); P.drawPlanetTextured(ctx, mid, mid, R, data, 0.2, light); if (data.rings) P.drawRings(ctx, mid, mid, R, light, true); }
     c.style.left = cxClient + "px"; c.style.top = cyClient + "px"; c.style.display = "block";
   };
@@ -852,7 +852,7 @@ function PlanetHUD({ data, kind, obs, date }) {
       if (c.width !== Math.round(w * dpr)) { c.width = w * dpr; c.height = h * dpr; }
       const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
       const cx = w / 2, cy = h / 2;
-      if (kind === "sun") { P.drawSun(ctx, cx, cy, Math.min(w, h) * 0.3); }
+      if (kind === "sun") { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.3, ((now - start) / 1000) * 0.008, 0); }
       else { const R = Math.min(w, h) * (data.rings ? 0.30 : 0.40), light = { x: -0.5, y: -0.45 }, rot = ((now - start) / 1000) * 0.08; if (data.rings) P.drawRings(ctx, cx, cy, R, light, false); P.drawPlanetTextured(ctx, cx, cy, R, data, rot, light); if (data.rings) P.drawRings(ctx, cx, cy, R, light, true); }
       raf = requestAnimationFrame(loop);
     };
@@ -891,7 +891,7 @@ function InfoCard({ sel, obs, date, onClose }) {
       if (c.width !== Math.round(w * dpr)) c.width = w * dpr; if (c.height !== Math.round(h * dpr)) c.height = h * dpr;
       const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
       const cx = w / 2, cy = h / 2;
-      if (kind === "sun") { P.drawSun(ctx, cx, cy, Math.min(w, h) * 0.26); return; }
+      if (kind === "sun") { P.drawSunTextured(ctx, cx, cy, Math.min(w, h) * 0.26, ((now - start) / 1000) * 0.008, 0); raf = requestAnimationFrame(render); return; }
       const R = Math.min(w, h) * (data.rings ? 0.26 : 0.34), light = { x: -0.55, y: -0.5 }, rot = ((now - start) / 1000) * 0.04;
       if (data.rings) P.drawRings(ctx, cx, cy, R, light, false);
       P.drawPlanetTextured(ctx, cx, cy, R, data, rot, light);

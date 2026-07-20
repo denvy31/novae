@@ -271,22 +271,31 @@ function SunEvolution({ lang, onClose }) {
       const nebA = (ST[i0].neb ? 1 - bl : 0) + (ST[i1].neb ? bl : 0);
       const wdA = (ST[i0].wd ? 1 - bl : 0) + (ST[i1].wd ? bl : 0);
       const bhA = (ST[i0].bh ? 1 - bl : 0) + (ST[i1].bh ? bl : 0);
-      // TROU NOIR : disque d'accrétion tourbillonnant + anneau de photons + horizon noir
+      // TROU NOIR façon EHT (photos réelles M87*/Sgr A*, 2019/2022) : anneau de plasma
+      // chauffé asymétrique — un côté nettement plus brillant que l'autre (effet Doppler du
+      // gaz en rotation), pas de bandes propres et régulières — puis grande ombre noire nette.
       if (bhA > 0.02) {
-        const rb = M * 0.075;
-        for (let k = 5; k >= 0; k--) {
-          const rr = rb * (1.5 + k * 0.55), sw = (now / 2600 + k * 0.9) % (Math.PI * 2);
-          g.strokeStyle = "rgba(" + (k < 2 ? "255,240,215" : k < 4 ? "255,170,80" : "200,80,40") + "," + (0.6 * bhA * (1 - k * 0.13)).toFixed(3) + ")";
-          g.lineWidth = rb * 0.34;
-          g.beginPath(); g.ellipse(cx, cy, rr, rr * 0.26, 0, sw, sw + 4.6); g.stroke();
+        const rb = M * 0.09;
+        g.save(); g.globalCompositeOperation = "lighter";
+        const amb = g.createRadialGradient(cx, cy, rb * 0.85, cx, cy, rb * 2.7);
+        amb.addColorStop(0, "rgba(255,130,40,0)"); amb.addColorStop(0.4, "rgba(255,120,40," + (0.22 * bhA).toFixed(3) + ")"); amb.addColorStop(1, "transparent");
+        g.fillStyle = amb; g.beginPath(); g.arc(cx, cy, rb * 2.7, 0, 7); g.fill();
+        const ringR = rb * 1.7, spin = now / 6000, N = 44;
+        for (let i = 0; i < N; i++) {
+          const t2 = (i / N) * Math.PI * 2 + spin;
+          const bright = 0.32 + 0.68 * Math.pow(Math.max(0, Math.cos(t2 - Math.PI * 0.65)), 1.7); // asymétrie type M87*
+          const px = cx + Math.cos(t2) * ringR, py = cy + Math.sin(t2) * ringR * 0.86;
+          const rr = rb * (0.26 + bright * 0.24);
+          const gr = g.createRadialGradient(px, py, 0, px, py, rr);
+          gr.addColorStop(0, "rgba(" + (bright > 0.75 ? "255,235,190" : "255,130,55") + "," + (bright * 0.85 * bhA).toFixed(3) + ")");
+          gr.addColorStop(1, "transparent");
+          g.fillStyle = gr; g.beginPath(); g.arc(px, py, rr, 0, 7); g.fill();
         }
-        const lens = g.createRadialGradient(cx, cy - rb * 1.15, 0, cx, cy - rb * 1.15, rb * 1.6);
-        lens.addColorStop(0, "rgba(255,200,130," + (0.4 * bhA).toFixed(3) + ")"); lens.addColorStop(1, "transparent");
-        g.fillStyle = lens; g.beginPath(); g.arc(cx, cy - rb * 1.15, rb * 1.6, 0, 7); g.fill();
-        g.strokeStyle = "rgba(255,250,240," + (0.9 * bhA).toFixed(3) + ")"; g.lineWidth = 1.6;
-        g.beginPath(); g.arc(cx, cy, rb * 1.08, 0, 7); g.stroke();
-        g.fillStyle = "rgba(0,0,0," + Math.min(1, bhA * 1.2).toFixed(3) + ")";
-        g.beginPath(); g.arc(cx, cy, rb, 0, 7); g.fill();
+        g.restore();
+        g.fillStyle = "rgba(3,1,0," + Math.min(1, bhA * 1.3).toFixed(3) + ")";
+        g.beginPath(); g.ellipse(cx, cy, rb, rb * 0.88, 0, 0, 7); g.fill();
+        g.strokeStyle = "rgba(255,225,180," + (0.45 * bhA).toFixed(3) + ")"; g.lineWidth = Math.max(1, rb * 0.045);
+        g.beginPath(); g.ellipse(cx, cy, rb * 1.02, rb * 0.9, 0, 0, 7); g.stroke();
       }
       if (nebA > 0.02) {
         for (let k = 0; k < 4; k++) {

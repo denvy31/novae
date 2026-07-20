@@ -40,6 +40,24 @@ function Onboarding({ mode, lang, onLang, onDone }) {
         fg.addColorStop(1, "transparent");
         g.fillStyle = fg; g.fillRect(0, 0, w, h);
       }
+      // 1b) aigrettes de flash façon photo (même langage visuel que le Soleil/les étoiles
+      // brillantes ailleurs dans l'app) — donne un vrai « coup de flash » au moment zéro
+      const flareA = Math.max(0, 1 - t * 1.1);
+      if (flareA > 0) {
+        g.globalAlpha = flareA * 0.8;
+        const L = R * (0.5 + t * 0.6), W = Math.max(1, R * 0.006);
+        [0, 1, 2, 3, 4, 5].forEach((k) => {
+          const ang = (k / 6) * Math.PI + 0.3;
+          g.save(); g.translate(cx, cy); g.rotate(ang);
+          const lg = g.createLinearGradient(0, 0, 0, -L);
+          lg.addColorStop(0, "rgba(255,250,235,0.9)"); lg.addColorStop(1, "transparent");
+          g.fillStyle = lg;
+          g.beginPath(); g.moveTo(-W, 0); g.lineTo(0, -L); g.lineTo(W, 0); g.closePath(); g.fill();
+          g.beginPath(); g.moveTo(-W, 0); g.lineTo(0, L); g.lineTo(W, 0); g.closePath(); g.fill();
+          g.restore();
+        });
+        g.globalAlpha = 1;
+      }
       // 2) onde de choc
       const ring = t * R * 0.75;
       const ra = Math.max(0, 0.65 - t * 0.28);
@@ -49,14 +67,22 @@ function Onboarding({ mode, lang, onLang, onDone }) {
         g.strokeStyle = "rgba(255,190,120," + ra * 0.6 + ")"; g.lineWidth = Math.max(1, 5 - t * 2);
         g.beginPath(); g.arc(cx, cy, ring * 0.82, 0, 7); g.stroke();
       }
-      // 3) éjectas : particules qui filent puis se figent en étoiles scintillantes
+      // 3) éjectas : traînées incandescentes qui filent puis se figent en étoiles scintillantes
       parts.forEach((p) => {
         const d = Math.min(1, t * p.v) * R * 0.52;
+        const dPrev = Math.min(1, Math.max(0, t - 0.045) * p.v) * R * 0.52; // position juste avant → traînée
         const x = cx + Math.cos(p.a) * d, y = cy + Math.sin(p.a) * d;
         const cool = Math.min(1, t * 0.55);              // refroidit : blanc-or → bleuté
         const al = (t * p.v < 1 ? 0.9 : 0.45 + 0.35 * Math.sin(now / 300 + p.tw)) * Math.min(1, t * 3);
+        const col = p.hue < 0.6 - cool * 0.3 ? "#ffd9a0" : "#cfe0ff";
+        // traînée de vitesse (visible tant que la particule file encore, s'efface une fois figée)
+        if (t * p.v < 1.15 && d > dPrev) {
+          const xp = cx + Math.cos(p.a) * dPrev, yp = cy + Math.sin(p.a) * dPrev;
+          g.strokeStyle = col; g.globalAlpha = Math.max(0, al * 0.5); g.lineWidth = p.sz * 0.7;
+          g.beginPath(); g.moveTo(xp, yp); g.lineTo(x, y); g.stroke();
+        }
         g.globalAlpha = Math.max(0, al);
-        g.fillStyle = p.hue < 0.6 - cool * 0.3 ? "#ffd9a0" : "#cfe0ff";
+        g.fillStyle = col;
         g.beginPath(); g.arc(x, y, p.sz * (1 - cool * 0.4), 0, 7); g.fill();
       });
       g.restore(); g.globalAlpha = 1;

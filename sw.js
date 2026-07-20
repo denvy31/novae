@@ -1,5 +1,5 @@
 /* Novaé — service worker (installable + offline app shell) */
-const CACHE = "novae-v55";
+const CACHE = "novae-v56";
 const SHELL = [
   "./", "index.html", "styles.css",
   "lib/react.production.min.js", "lib/react-dom.production.min.js",

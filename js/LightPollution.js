@@ -6,10 +6,45 @@ function LightPollution() {
   const [level, setLevel] = useState(4);
   const [locMsg, setLocMsg] = useState(null); // estimation basée sur la position
   const [locBusy, setLocBusy] = useState(false);
+  const [realSites, setRealSites] = useState(null); // sites sombres réels près de l'utilisateur (OSM)
   const canvasRef = useRef(null);
   const info = NV.bortle[level - 1];
   const fr = I18N.get() === "fr";
   const T = (f, e) => (fr ? f : e);
+
+  const haversineKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  };
+
+  // Vrais lieux sombres proches de l'utilisateur (parcs nationaux, réserves naturelles) via
+  // OpenStreetMap/Overpass — gratuit, sans clé, fonctionne PARTOUT dans le monde, avec de
+  // vraies distances calculées depuis la position réelle (au lieu d'une liste française fixe).
+  const findRealSites = (lat, lon) => {
+    const q = "[out:json][timeout:20];(" +
+      ["boundary\"=\"national_park", "leisure\"=\"nature_reserve"].map((tag) =>
+        ["node", "way", "relation"].map((el) => el + "[\"" + tag + "\"](around:150000," + lat + "," + lon + ");").join("")
+      ).join("") + ");out center 40;";
+    return fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: "data=" + encodeURIComponent(q) })
+      .then((r) => r.json())
+      .then((j) => {
+        const seen = new Set();
+        return (j.elements || [])
+          .map((el) => {
+            const nm = el.tags && el.tags.name;
+            if (!nm || seen.has(nm)) return null;
+            const la = el.lat != null ? el.lat : (el.center && el.center.lat);
+            const lo = el.lon != null ? el.lon : (el.center && el.center.lon);
+            if (la == null || lo == null) return null;
+            seen.add(nm);
+            const type = el.tags.boundary === "national_park" ? T("Parc national", "National park") : T("Réserve naturelle", "Nature reserve");
+            return { name: nm, type, dist: Math.round(haversineKm(lat, lon, la, lo)) };
+          })
+          .filter(Boolean).sort((a, b) => a.dist - b.dist).slice(0, 5);
+      });
+  };
 
   // Estime la pollution lumineuse de l'endroit où se trouve l'utilisateur :
   // GPS du téléphone → géocodage inverse (BigDataCloud, gratuit, CORS) → taille de la
@@ -19,6 +54,7 @@ function LightPollution() {
     setLocBusy(true); setLocMsg(null);
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude, longitude } = pos.coords;
+      findRealSites(latitude, longitude).then(setRealSites).catch(() => {}); // en parallèle, ne bloque pas l'estimation
       fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + latitude + "&longitude=" + longitude + "&localityLanguage=fr")
         .then((r) => r.json())
         .then((j) => {
@@ -172,14 +208,16 @@ function LightPollution() {
           T("À quoi ça sert ? À savoir ce que vous pourrez réellement voir à l'œil nu ce soir, et à choisir un bon lieu d'observation : viser un site Bortle 4 ou moins change tout — la Voie Lactée redevient visible.",
             "What is it for? Knowing what you'll actually see tonight with the naked eye, and picking a good observing spot: aiming for Bortle 4 or darker changes everything — the Milky Way becomes visible again."))),
 
-      React.createElement("h4", null, I18N.t("lp_sites")),
+      React.createElement("h4", null, realSites && realSites.length ? T("📍 Sites sombres près de vous", "📍 Dark sites near you") : I18N.t("lp_sites")),
+      realSites && realSites.length === 0 && React.createElement("p", { className: "loc-note" }, T("Aucun parc national/réserve trouvé dans un rayon de 150 km.", "No national park/reserve found within 150 km.")),
       React.createElement("ul", { className: "site-list" },
-        NV.sites.map((s) =>
+        (realSites && realSites.length ? realSites : NV.sites).map((s) =>
           React.createElement("li", { key: s.name },
             React.createElement("span", { className: "site-name" }, s.name),
-            React.createElement("span", { className: "site-meta" }, "Bortle " + s.bortle + " · " + s.dist + " km")
+            React.createElement("span", { className: "site-meta" }, (s.type || ("Bortle " + s.bortle)) + " · " + s.dist + " km")
           ))
-      )
+      ),
+      realSites && realSites.length > 0 && React.createElement("p", { className: "loc-note" }, T("📡 Calculé depuis votre position réelle (OpenStreetMap).", "📡 Computed from your real location (OpenStreetMap)."))
     )
   );
 
