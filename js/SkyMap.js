@@ -135,13 +135,6 @@ function SkyMap() {
     { ra: 85.0, dec: 22.0, c: "255,120,120", s: 0.7 },   // Taurus
     { ra: 201.0, dec: -63.0, c: "150,180,255", s: 1.0 },
   ], []);
-  const sprites = useRef(null);
-  const getSprites = () => {
-    if (sprites.current) return sprites.current;
-    const mk = (rgb) => { const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(" + rgb + ",1)"); gr.addColorStop(1, "rgba(" + rgb + ",0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c; };
-    sprites.current = { blue: mk("180,195,255"), red: mk("255,140,120") };
-    return sprites.current;
-  };
 
   const galToEq = (l, b) => {
     const raN = 192.8595 * DEG, decN = 27.1283 * DEG, lN = 122.932 * DEG;
@@ -428,7 +421,7 @@ function SkyMap() {
     const tick = setInterval(() => { if (!mounted) return; const c = clock.current; if (c.live) c.date = new Date(); else if (c.rate) c.date = new Date(c.date.getTime() + c.rate * 1000); setClockLabel(fmtClock(c.date, c.live)); refresh(); }, 1000);
     const onResize = () => drawRef.current();
     window.addEventListener("resize", onResize);
-    return () => { mounted = false; clearInterval(tick); cancelAnimationFrame(motionRAF.current); window.removeEventListener("resize", onResize); window.removeEventListener("deviceorientationabsolute", handleOrientation, true); window.removeEventListener("deviceorientation", handleOrientation, true); };
+    return () => { mounted = false; clearInterval(tick); cancelAnimationFrame(motionRAF.current); cancelAnimationFrame(hoverRAF.current); hoverPlanetRef.current = null; window.removeEventListener("resize", onResize); window.removeEventListener("deviceorientationabsolute", handleOrientation, true); window.removeEventListener("deviceorientation", handleOrientation, true); };
     // eslint-disable-next-line
   }, []);
   useEffect(() => { drawRef.current(); }, [draw]);

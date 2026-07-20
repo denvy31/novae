@@ -208,6 +208,67 @@
     }
   }
 
+  // ---- Granulation solaire : mosaïque de cellules de convection animées — l'aspect
+  // « bouillonnant » de la vraie photosphère (gaz chaud qui remonte au centre de chaque
+  // cellule, refroidit et redescend sur ses bords). Dérive lentement dans le temps ;
+  // n'est PAS liée à la rotation de la texture (la granulation réelle se renouvelle en
+  // permanence, ce n'est pas un motif de surface fixe).
+  let granCells = null;
+  function getGranCells() {
+    if (granCells) return granCells;
+    let s = 424242; const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    granCells = Array.from({ length: 240 }, () => ({
+      a: rnd() * Math.PI * 2, d: Math.pow(rnd(), 0.55),
+      sz: 0.026 + rnd() * 0.048, ph: rnd() * Math.PI * 2, sp: 0.12 + rnd() * 0.26, bright: rnd() > 0.7,
+    }));
+    return granCells;
+  }
+  function drawGranulation(ctx, x, y, r, now) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+    ctx.globalCompositeOperation = "overlay";
+    getGranCells().forEach((c) => {
+      const drift = Math.sin(now / 4200 * c.sp + c.ph) * 0.014;
+      const dist = Math.min(0.97, c.d + drift * 0.5), ang = c.a + drift;
+      const cx = x + Math.cos(ang) * dist * r, cy = y + Math.sin(ang) * dist * r, rr = c.sz * r;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
+      if (c.bright) { g.addColorStop(0, "rgba(255,244,214,0.55)"); g.addColorStop(1, "rgba(255,244,214,0)"); }
+      else { g.addColorStop(0, "rgba(120,40,0,0.4)"); g.addColorStop(1, "rgba(120,40,0,0)"); }
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  // ---- Protubérances : boucles de plasma incandescent (H-alpha, rose-rouge) qui s'élèvent
+  // au-dessus du limbe et pulsent lentement — ce qui rend un Soleil « vivant » plutôt qu'un
+  // simple disque statique. Dessinées HORS du disque (pas de clip).
+  let promSeed = null;
+  function getProminences() {
+    if (promSeed) return promSeed;
+    let s = 99117; const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    promSeed = Array.from({ length: 3 }, () => ({ a: rnd() * Math.PI * 2, h: 0.14 + rnd() * 0.16, w: 0.16 + rnd() * 0.1, ph: rnd() * Math.PI * 2 }));
+    return promSeed;
+  }
+  function drawProminences(ctx, x, y, r, now) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    getProminences().forEach((p) => {
+      const pulse = 0.7 + 0.3 * Math.sin(now / 2600 + p.ph);
+      const a1 = p.a - p.w, a2 = p.a + p.w;
+      const x1 = x + Math.cos(a1) * r, y1 = y + Math.sin(a1) * r;
+      const x2 = x + Math.cos(a2) * r, y2 = y + Math.sin(a2) * r;
+      const peakR = r * (1 + p.h * pulse);
+      const px = x + Math.cos(p.a) * peakR, py = y + Math.sin(p.a) * peakR;
+      const grad = ctx.createLinearGradient(x1, y1, px, py);
+      grad.addColorStop(0, "rgba(255,100,70,0)");
+      grad.addColorStop(0.5, "rgba(255,110,80," + (0.6 * pulse).toFixed(3) + ")");
+      grad.addColorStop(1, "rgba(255,150,120," + (0.35 * pulse).toFixed(3) + ")");
+      ctx.strokeStyle = grad; ctx.lineWidth = Math.max(1, r * 0.022);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(px, py, x2, y2); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   function drawSun(ctx, x, y, r) {
     // rendu réaliste : disque blanc quasi uniforme (comme à l'œil/à la caméra),
     // léger assombrissement centre-bord, halo discret — plus de « tache jaune »
@@ -494,6 +555,7 @@
   function drawSunTextured(ctx, x, y, r, rot, viewLat) {
     const img = getTex("sun");
     const oc = img ? orthoSphere("sun", img, r, rot || 0, viewLat) : null;
+    const now = performance.now();
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     const corona = ctx.createRadialGradient(x, y, r * 0.9, x, y, r * 2.3);
@@ -507,11 +569,13 @@
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     ctx.drawImage(oc, x - r, y - r, 2 * r, 2 * r);
+    if (r > 15) drawGranulation(ctx, x, y, r, now); // « boules de gaz » : convection animée
     // éclat du cœur + assombrissement centre-bord (photométrie solaire réelle)
     const hot = ctx.createRadialGradient(x, y, 0, x, y, r);
     hot.addColorStop(0, "rgba(255,252,235,0.5)"); hot.addColorStop(0.55, "rgba(255,235,180,0.12)"); hot.addColorStop(0.88, "rgba(120,50,0,0.12)"); hot.addColorStop(1, "rgba(90,30,0,0.42)");
     ctx.fillStyle = hot; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
     ctx.restore();
+    if (r > 15) drawProminences(ctx, x, y, r, now); // boucles de plasma au limbe, hors du disque
   }
 
   window.NovaePlanet = { drawPlanet, drawPlanetTextured, drawBall, drawMoonTextured, drawRings, drawSun, drawSunTextured, ringGeom, setTextureLoadCallback, preloadTextures };

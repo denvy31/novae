@@ -41,6 +41,23 @@ body {
   color: var(--text);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+/* ============================================================
+   TYPOGRAPHIE — hiérarchie cohérente sur tous les onglets :
+   titres de section en serif (registre « carte d'observatoire »),
+   corps de texte en sans-serif pour la lisibilité.
+   ============================================================ */
+h1, h2, h3, h4 { font-weight: 700; line-height: 1.25; }
+p { line-height: 1.55; }
+.tl-era-title, .uni-head, .welcome-card h2, .quiz-card h3, .evo-card h3,
+.planet-info h3, .bortle-info h3, .tuto-card h3, .event-card h4, .uni-card h4 {
+  font-family: Georgia, "Times New Roman", serif; letter-spacing: 0.2px;
+}
+/* petite lueur cyan sur les grands titres de panneau : cohérent avec l'identité néon */
+.uni-head, .quiz-card h3, .evo-card h3, .planet-info h3, .bortle-info h3 {
+  text-shadow: 0 0 18px rgba(88, 200, 255, 0.22);
 }
 
 /* ============================================================
