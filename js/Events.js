@@ -72,6 +72,14 @@ function EventsPanel() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const [filter, setFilter] = useState("Tous");
   const [open, setOpen] = useState(null); // événement déplié (détails complets)
+  // redistribue un long texte en paragraphes courts (≤2 phrases) : moins lourd à lire
+  const splitParas = (text) => {
+    if (!text) return [];
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const paras = [];
+    for (let i = 0; i < sentences.length; i += 2) paras.push(sentences.slice(i, i + 2).join(" "));
+    return paras;
+  };
 
   const types = ["Tous", ...Array.from(new Set(NV.events.map((e) => e.type)))];
 
@@ -111,7 +119,8 @@ function EventsPanel() {
             React.createElement("p", null, e.desc),
             open === i && React.createElement(React.Fragment, null,
               e.where && React.createElement("p", { className: "event-where" }, "📍 " + e.where),
-              e.more && React.createElement("p", { className: "event-more" }, e.more))
+              e.more && React.createElement("div", { className: "event-more" },
+                splitParas(e.more).map((para, pi) => React.createElement("p", { key: pi }, para))))
           ),
           React.createElement("div", { className: "event-countdown" },
             e.days < 0

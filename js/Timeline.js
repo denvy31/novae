@@ -432,7 +432,11 @@ function TimelinePanel() {
         React.createElement("span", { className: "tl-origin-num" }, c[0]),
         React.createElement("div", null,
           React.createElement("h4", null, c[1]),
-          React.createElement("p", null, c[2])))),
+          // redistribue le texte en paragraphes courts (≤2 phrases) : moins lourd à lire
+          c[2].split(/(?<=[.!?])\s+/).filter(Boolean).reduce((paras, s2, si) => {
+            if (si % 2 === 0) paras.push(s2); else paras[paras.length - 1] += " " + s2;
+            return paras;
+          }, []).map((para, pi) => React.createElement("p", { key: pi }, para))))),
       React.createElement("p", { className: "tl-origin-src" }, L("Sources : NASA (théorie du Big Bang et inflation), observations du fond diffus cosmologique (COBE, WMAP, Planck), Guth (1981) — vulgarisé.", "Sources: NASA (Big Bang theory and inflation), cosmic microwave background observations (COBE, WMAP, Planck), Guth (1981) — popularized.")))
   );
 }

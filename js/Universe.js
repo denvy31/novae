@@ -90,12 +90,20 @@ function UniversePanel() {
   const restart = () => { setMode("quiz"); setQi(0); setScore(0); setPicked(null); }; // même niveau, nouvelle partie
   const chooseLevel = () => { setDiff(null); setMode("quiz"); };
 
+  // redistribue un long texte en paragraphes courts (≤2 phrases) pour une lecture moins lourde
+  const splitParas = (text) => {
+    if (!text) return [];
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const paras = [];
+    for (let i = 0; i < sentences.length; i += 2) paras.push(sentences.slice(i, i + 2).join(" "));
+    return paras;
+  };
   const card = (e, i) => React.createElement("div", { key: i, className: "uni-card" },
     React.createElement("div", { className: "uni-icon" }, e.icon),
     React.createElement("div", { className: "uni-body" },
       e.t && React.createElement("div", { className: "uni-when" }, e.t),
       React.createElement("h4", null, e.title),
-      React.createElement("p", null, e.txt)));
+      splitParas(e.txt).map((para, pi) => React.createElement("p", { key: pi }, para))));
 
   const q = pool[qi];
   return React.createElement("div", { className: "universe-wrap" },

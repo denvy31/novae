@@ -528,7 +528,7 @@ p { line-height: 1.55; }
 .event-type { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); }
 .event-date { font-size: 11px; color: var(--muted); }
 .event-body h4 { font-size: 15px; }
-.event-body p { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.45; }
+.event-body p { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.6; max-width: 58ch; }
 .event-countdown { text-align: center; min-width: 64px; }
 .event-countdown strong { display: block; font-size: 20px; color: #fff; }
 .event-countdown span { font-size: 11px; color: var(--muted); }
@@ -680,9 +680,9 @@ p { line-height: 1.55; }
   background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px 18px; backdrop-filter: blur(10px);
 }
-.tl-desc { font-size: 13.5px; line-height: 1.55; }
+.tl-desc { font-size: 13.5px; line-height: 1.6; max-width: 60ch; }
 .tl-show { font-size: 12px; color: var(--accent); margin-top: 8px; }
-.tl-note { font-size: 11.5px; color: var(--muted); line-height: 1.5; font-style: italic; padding: 0 4px 8px; }
+.tl-note { font-size: 11.5px; color: var(--muted); line-height: 1.6; font-style: italic; padding: 0 4px 8px; max-width: 64ch; }
 
 /* ============================================================
    FIL D'ACTUALITÉS SPATIALES
@@ -860,7 +860,8 @@ p { line-height: 1.55; }
 
 /* Pollution : estimation + explication */
 .loc-estimate { margin: 12px 0 8px; width: 100%; text-align: center; font-weight: 600; }
-.loc-result { background: rgba(88,200,255,0.07); border: 1px solid var(--border); border-radius: 12px; padding: 10px 13px; font-size: 12px; line-height: 1.5; margin-bottom: 10px; }
+.loc-result { background: rgba(88,200,255,0.07); border: 1px solid var(--border); border-radius: 12px; padding: 12px 15px; font-size: 12.5px; line-height: 1.6; margin-bottom: 10px; max-width: 58ch; }
+.loc-result p { margin-top: 4px; }
 .loc-result.err { color: #ffc488; border-color: var(--warn); }
 .loc-result strong { color: var(--accent); }
 .warn-txt { color: #ffc488; margin-top: 5px; }
@@ -868,10 +869,11 @@ p { line-height: 1.55; }
 .loc-note { color: var(--muted); font-size: 10.5px; margin-top: 5px; font-style: italic; }
 .bortle-explain { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; margin: 10px 0 14px; }
 .bortle-explain h4 { margin-bottom: 6px; font-size: 13px; }
-.bortle-explain p { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 6px; }
+.bortle-explain p { font-size: 12.5px; color: var(--muted); line-height: 1.65; max-width: 58ch; margin-bottom: 12px; }
+.bortle-explain p:last-child { margin-bottom: 0; }
 
 /* Événements : où observer + langue actus */
-.event-where { font-size: 11.5px; color: #9fd8b8; margin-top: 6px; line-height: 1.45; }
+.event-where { font-size: 12px; color: #9fd8b8; margin-top: 8px; line-height: 1.6; max-width: 58ch; }
 .news-lang-row { display: flex; gap: 8px; margin-bottom: 4px; }
 
 /* ============================================================
@@ -884,7 +886,8 @@ p { line-height: 1.55; }
 .uni-icon { font-size: 26px; flex: 0 0 38px; text-align: center; filter: drop-shadow(0 0 8px rgba(88,200,255,0.35)); }
 .uni-when { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin-bottom: 2px; }
 .uni-body h4 { font-size: 14.5px; margin-bottom: 4px; }
-.uni-body p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.uni-body p { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 58ch; margin-bottom: 8px; }
+.uni-body p:last-child { margin-bottom: 0; }
 .uni-src { font-size: 10.5px; color: var(--muted); font-style: italic; margin-top: 14px; }
 .quiz-card { background: var(--panel-strong); border: 1px solid var(--border-bright); border-radius: 18px; padding: 20px 22px; margin-top: 6px; animation: cardIn 0.2s ease; }
 .quiz-card.center { text-align: center; }
@@ -919,7 +922,7 @@ p { line-height: 1.55; }
 .tuto-card { max-width: 400px; }
 .tuto-icon { font-size: 46px; margin-bottom: 8px; filter: drop-shadow(0 0 14px rgba(88,200,255,0.5)); }
 .tuto-card h3 { font-size: 19px; margin-bottom: 10px; }
-.tuto-txt { font-size: 13.5px; color: var(--muted); line-height: 1.6; min-height: 86px; }
+.tuto-txt { font-size: 13.5px; color: var(--muted); line-height: 1.65; min-height: 86px; max-width: 42ch; margin: 0 auto; }
 .tuto-dots { display: flex; gap: 7px; justify-content: center; margin: 14px 0 16px; }
 .tuto-dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(125,160,240,0.25); transition: 0.2s; }
 .tuto-dots span.on { background: var(--accent); box-shadow: 0 0 8px rgba(88,200,255,0.7); }
@@ -931,7 +934,8 @@ p { line-height: 1.55; }
 .tl-origin-card { display: flex; gap: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 13px 16px; }
 .tl-origin-num { font-size: 20px; flex: 0 0 30px; }
 .tl-origin-card h4 { font-size: 13.5px; margin-bottom: 4px; color: #cfe2ff; }
-.tl-origin-card p { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.tl-origin-card p { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 56ch; margin-bottom: 7px; }
+.tl-origin-card p:last-child { margin-bottom: 0; }
 .tl-origin-src { font-size: 10.5px; color: var(--muted); font-style: italic; padding: 2px 4px 10px; }
 
 /* Frise : cadre canvas plus cinéma */
@@ -989,7 +993,9 @@ p { line-height: 1.55; }
 .event-card.clickable { cursor: pointer; }
 .event-card.open { border-color: var(--accent); background: rgba(16,24,48,0.75); }
 .event-chevron { margin-left: auto; color: var(--accent); font-size: 12px; }
-.event-more { font-size: 12.5px; color: #cdd9f2; margin-top: 8px; line-height: 1.55; background: rgba(88,200,255,0.06); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 0 10px 10px 0; }
+.event-more { font-size: 12.5px; color: #cdd9f2; margin-top: 8px; line-height: 1.65; max-width: 58ch; background: rgba(88,200,255,0.06); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 10px 10px 0; }
+.event-more p { margin-bottom: 8px; }
+.event-more p:last-child { margin-bottom: 0; }
 
 /* barre vitesse : bouton temps réel + évolution */
 .sim-speed .chip { flex: 0 0 auto; }
@@ -1015,11 +1021,11 @@ p { line-height: 1.55; }
 .evo-slider { width: 100%; margin: 14px 0 8px; appearance: none; height: 6px; border-radius: 999px; background: linear-gradient(90deg, #ffd24a, #ff8c42, #ff5040, #b8c6ff, #eef4ff); cursor: pointer; }
 .evo-slider::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); box-shadow: 0 0 12px rgba(88,200,255,0.6); }
 .evo-stage { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
-.evo-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 5px; min-height: 58px; }
+.evo-desc { font-size: 13px; color: var(--muted); line-height: 1.65; margin-top: 8px; min-height: 58px; max-width: 52ch; }
 
 /* avertissements utilisateur */
 .warn-stack { position: fixed; top: calc(64px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 8px; width: min(430px, calc(100vw - 24px)); animation: cardIn 0.3s ease; }
-.warn-toast { background: rgba(255,157,60,0.12); border: 1px solid rgba(255,157,60,0.5); color: #ffd9b0; border-radius: 13px; padding: 10px 14px; font-size: 12.5px; line-height: 1.45; backdrop-filter: blur(12px); }
+.warn-toast { background: rgba(255,157,60,0.12); border: 1px solid rgba(255,157,60,0.5); color: #ffd9b0; border-radius: 13px; padding: 12px 15px; font-size: 12.5px; line-height: 1.6; backdrop-filter: blur(12px); }
 .warn-close { position: absolute; top: -10px; right: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--panel-solid); border: 1px solid var(--border-bright); color: var(--text); cursor: pointer; font-size: 12px; }
 
 /* bouton évolution mis en avant */
