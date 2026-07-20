@@ -20,6 +20,7 @@ function PlanetTracker(props) {
   const pinch = useRef(null);
   const [speed, setSpeed] = useState(1 / 86400); // TEMPS RÉEL par défaut (1 s = 1 s)
   const [evoOpen, setEvoOpen] = useState(false); // panneau « Évolution du Soleil »
+  const [closeFull, setCloseFull] = useState(false); // gros plan en plein écran (façon Google Earth)
   // le Soleil est sélectionnable comme les planètes
   const SUN = { name: "Soleil", sun: true, render: "sun", color: "#ffd24a", diam: 1392700, dayLen: 25.4, moons: [], rings: false, fact: "Étoile naine jaune (G2V). 99,86 % de la masse du système solaire. Température de surface ≈ 5 500 °C, cœur ≈ 15 millions °C." };
   const [selected, setSelected] = useState(NV.planets[4]); // Jupiter (montre lunes + bandes)
@@ -183,12 +184,21 @@ function PlanetTracker(props) {
     ),
 
     React.createElement("aside", { className: "planet-info" },
-      React.createElement("canvas", {
-        ref: closeRef, className: "closeup-canvas",
-        onWheel: onCloseWheel, onPointerDown: onCloseDown, onPointerMove: onCloseMove,
-        onPointerUp: onCloseUp, onPointerCancel: onCloseUp,
-        onDoubleClick: () => { zoomC.current = 1; rotOff.current = 0; rotLat.current = 0; },
-      }),
+      React.createElement("div", { className: "closeup-wrap" + (closeFull ? " full" : "") },
+        React.createElement("canvas", {
+          ref: closeRef, className: "closeup-canvas",
+          onWheel: onCloseWheel, onPointerDown: onCloseDown, onPointerMove: onCloseMove,
+          onPointerUp: onCloseUp, onPointerCancel: onCloseUp,
+          onDoubleClick: () => { zoomC.current = 1; rotOff.current = 0; rotLat.current = 0; },
+        }),
+        React.createElement("button", {
+          className: closeFull ? "closeup-collapse" : "closeup-expand",
+          onClick: () => setCloseFull((v) => !v),
+          title: closeFull ? (lang === "fr" ? "Réduire" : "Collapse") : (lang === "fr" ? "Agrandir — tournez la planète comme sur Google Earth" : "Expand — spin the planet like Google Earth"),
+        }, closeFull ? "×" : "⛶"),
+        closeFull && React.createElement("div", { className: "closeup-hint" },
+          lang === "fr" ? "👆 Glissez pour tourner dans tous les sens · pincez pour zoomer" : "👆 Drag to spin any direction · pinch to zoom")
+      ),
       React.createElement("h3", null, selected.sun ? "Soleil ☀️" : pname(selected.name)),
       selected.dwarf && React.createElement("span", { className: "tag" }, tr("pl_dwarf")),
       React.createElement("table", { className: "info-table" },

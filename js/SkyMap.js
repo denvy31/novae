@@ -28,6 +28,11 @@ function SkyMap() {
   const azOffset = useRef(0);   // manual calibration (azimuth)
   const altOffset = useRef(0);  // manual calibration (altitude)
   const magDeclRef = useRef(0); // déclinaison magnétique WMM (° est, 0 hors-ligne)
+  // taille d'affichage des planètes/Soleil/Lune : réglable, mémorisée
+  const planetSizeRef = useRef((() => { try { const v = parseFloat(localStorage.getItem("novae-plsize")); return v >= 0.6 && v <= 3 ? v : 1.4; } catch (e) { return 1.4; } })());
+  const compassStart = useRef(null);   // détection boussole imprécise (coque aimantée…)
+  const badCompass = useRef(0);
+  const compassTipShown = useRef(false);
   const aosRef = useRef(null);  // AbsoluteOrientationSensor (Android : quaternion précis)
   const aosOn = useRef(false);  // capteur quaternion actif → ignore les événements Euler
   const chBranch = useRef(null); // iOS : branche du cap boussole (avant/après verticale), avec hystérésis
@@ -121,13 +126,6 @@ function SkyMap() {
     zoomToRaDec(r.ra, r.dec, initScale.current * 8);
   };
 
-  // dense faint starfield (astrophoto look), uniform on the sphere
-  const dust = useMemo(() => {
-    const a = []; let s = 99; const r = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
-    const count = (typeof window !== "undefined" && window.innerWidth < 700) ? 1300 : 2800; // lighter on phones
-    for (let i = 0; i < count; i++) a.push({ ra: r() * 360, dec: Math.asin(r() * 2 - 1) * 180 / Math.PI, b: 0.25 + r() * 0.5 });
-    return a;
-  }, []);
   // nebulosity patches (Hα red / reflection blue) near bright Milky Way regions
   const NEB = useMemo(() => [
     { ra: 266.4, dec: -29.0, c: "255,150,90", s: 2.4 },  // galactic centre bulge
@@ -214,10 +212,9 @@ function SkyMap() {
       sats.current.forEach((st) => { try { const pv = window.satellite.propagate(st.satrec, date); if (!pv.position) return; const ecf = window.satellite.eciToEcf(pv.position, gmst); const la = window.satellite.ecfToLookAngles(gd, ecf); f.sats.push({ az: la.azimuth / DEG, alt: la.elevation / DEG, name: st.name, rangeKm: la.rangeSat, satrec: st.satrec }); } catch (e) {} });
     }
     f.mw = mwRaDec().map((p) => { const a = A2(p[0], p[1]); return [a.az, a.alt, p[2]]; });
-    f.dust = dust.map((d) => { const a = A2(d.ra, d.dec); return [a.az, a.alt, d.b]; });
     f.neb = NEB.map((n) => { const a = A2(n.ra, n.dec); return { az: a.az, alt: a.alt, c: n.c, s: n.s }; });
     frame.current = f;
-  }, [AS, NV, named, dust, NEB]);
+  }, [AS, NV, named, NEB]);
 
   // ---- CHEAP: project the cached frame to the screen (runs at 60 fps) ----
   const draw = useCallback(() => {
@@ -250,8 +247,6 @@ function SkyMap() {
 
     // Milky Way = a dense cloud of faint stars along the galactic plane (no halos → no blobs)
     if (showMilkyWay && f.mw) { ctx.fillStyle = "#cdd8f5"; for (let i = 0; i < f.mw.length; i++) { const m = f.mw[i]; if (m[1] < minAlt) continue; const p = project(m[0], m[1], w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) continue; ctx.globalAlpha = m[2] * 0.8; ctx.fillRect(p[0], p[1], 1, 1); } ctx.globalAlpha = 1; }
-    // dense faint background starfield (depth)
-    if (f.dust) { ctx.fillStyle = "#d6def0"; for (let i = 0; i < f.dust.length; i++) { const d = f.dust[i]; if (d[1] < minAlt) continue; const p = project(d[0], d[1], w, h); if (!p || p[0] < 0 || p[0] > w || p[1] < 0 || p[1] > h) continue; ctx.globalAlpha = d[2] * 0.32; ctx.fillRect(p[0], p[1], 1, 1); } ctx.globalAlpha = 1; }
 
     // stars — bright ones get bloom + diffraction spikes (astrophoto look)
     const starsHit = [];
@@ -327,14 +322,15 @@ function SkyMap() {
     if (f.sun && f.sun.alt >= minAlt) sunP = project(f.sun.az, f.sun.alt, w, h);
     const lightTo = (p) => { if (sunP) { const dx = sunP[0] - p[0], dy = sunP[1] - p[1], d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; } return { x: -0.55, y: -0.55 }; };
     if (showPlanets) {
-      // tailles plafonnées : les astres restent des repères élégants, jamais des ballons plein écran
-      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(2.4, zoomF)); P.drawSun(ctx, sunP[0], sunP[1], sr); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
-      if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)); P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
+      // tailles plafonnées + multiplicateur réglable par l'utilisateur (menu ⚙ « Taille planètes »)
+      const szK = planetSizeRef.current;
+      if (sunP) { const sr = 9 * Math.max(0.8, Math.min(2.4, zoomF)) * szK; P.drawSun(ctx, sunP[0], sunP[1], sr); planetHit.push({ x: sunP[0], y: sunP[1], r: sr + 6, kind: "sun", data: { name: "Soleil", render: "sun" }, ra: f.sun.ra, dec: f.sun.dec }); }
+      if (f.moon && f.moon.alt >= minAlt) { const mp = project(f.moon.az, f.moon.alt, w, h); if (mp) { const mr = 8 * Math.max(0.9, Math.min(2.8, zoomF)) * szK; P.drawPlanetTextured(ctx, mp[0], mp[1], mr, { render: "moon", name: "Lune" }, 0.25, lightTo(mp)); ctx.fillStyle = "rgba(235,240,255,0.9)"; ctx.font = "11px system-ui"; ctx.fillText("Lune", mp[0] + mr + 4, mp[1] + 3); planetHit.push({ x: mp[0], y: mp[1], r: mr + 6, kind: "moon", data: { name: "Lune", render: "moon" }, ra: f.moon.ra, dec: f.moon.dec }); } }
       f.bodies.forEach((b) => {
         if (b.alt < minAlt) return; const p = project(b.az, b.alt, w, h); if (!p) return;
         // planètes plus grandes, en rotation permanente sur elles-mêmes ; survol = ×2 + rotation rapide
         const isHov = hoverPlanetRef.current === b.pl.name;
-        const pl = b.pl, basePr = Math.max(5, Math.min(12, Math.pow(pl.diam, 0.27) / 2.4)), pr = basePr * Math.max(0.9, Math.min(3.2, zoomF)) * (isHov ? 2 : 1), light = lightTo(p);
+        const pl = b.pl, basePr = Math.max(5, Math.min(12, Math.pow(pl.diam, 0.27) / 2.4)), pr = basePr * Math.max(0.9, Math.min(3.2, zoomF)) * (isHov ? 2 : 1) * szK, light = lightTo(p);
         const rotNow = (performance.now() / (isHov ? 14000 : 45000)) % 1;
         // texture réelle dès que la planète est assez grande pour la voir (fini les boules colorées)
         if (pr > 6) { if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, false); P.drawPlanetTextured(ctx, p[0], p[1], pr, pl, rotNow, light); if (pl.rings) P.drawRings(ctx, p[0], p[1], pr, light, true); }
@@ -597,6 +593,19 @@ function SkyMap() {
       if (chAnchor.current != null) alphaDeg = e.alpha + chAnchor.current;
       // NE PAS marquer absSeen ici (les événements iPhone sont de type "deviceorientation" ;
       // les marquer « absolus » gelait tout — bug corrigé en v37).
+      // Détection réelle d'une boussole imprécise (coque aimantée, perturbation magnétique) :
+      // webkitCompassAccuracy négatif = invalide, > 35° = médiocre. Avertit UNE fois après
+      // quelques secondes d'observation — pas un message statique aveugle.
+      const acc = e.webkitCompassAccuracy;
+      if (compassStart.current == null) compassStart.current = performance.now();
+      if (typeof acc === "number" && (acc < 0 || acc > 35)) badCompass.current++;
+      if (!compassTipShown.current && performance.now() - compassStart.current > 3000) {
+        compassTipShown.current = true;
+        if (badCompass.current > 15) setMotionMsg(L2(
+          "🧲 Boussole imprécise : retirez toute coque aimantée et faites un « 8 » avec le téléphone pour recalibrer.",
+          "🧲 Compass inaccurate: remove any magnetic case and wave the phone in a figure-8 to recalibrate."
+        ));
+      }
     }
     lastEvt.current = performance.now(); // le chien de garde sait que les capteurs vivent
     // Full device->world rotation (world: X=East, Y=North, Z=Up), ZXY order.
@@ -673,6 +682,7 @@ function SkyMap() {
     // restaure le calibrage manuel mémorisé (aligné une fois par l'utilisateur = gardé pour toujours)
     try { const c = JSON.parse(localStorage.getItem("novae-calib") || "null"); azOffset.current = (c && +c.az) || 0; altOffset.current = (c && +c.alt) || 0; } catch (e) { azOffset.current = 0; altOffset.current = 0; }
     chBranch.current = null; chAnchor.current = null; absSeen.current = false;
+    compassStart.current = null; badCompass.current = 0; compassTipShown.current = false;
     if (view.current.scale < initScale.current) { view.current.scale = initScale.current * 1.5; target.current.scale = view.current.scale; }
     // Android : AbsoluteOrientationSensor (quaternion fusionné gyro+magnéto+gravité) —
     // le cap le plus précis disponible, sans les ambiguïtés des angles d'Euler
@@ -762,6 +772,13 @@ function SkyMap() {
         chip(I18N.t("sky_constellations"), showLines, () => setShowLines(!showLines)),
         chip(I18N.t("sky_labels"), showLabels, () => setShowLabels(!showLabels)),
         chip(I18N.t("tab_planets"), showPlanets, () => setShowPlanets(!showPlanets)),
+        // Taille des planètes/Soleil/Lune : réglable, mémorisée
+        React.createElement("div", { className: "planetsize-row" },
+          React.createElement("span", null, "🪐 " + L2("Taille", "Size")),
+          React.createElement("input", {
+            type: "range", min: 0.6, max: 3, step: 0.1, defaultValue: planetSizeRef.current,
+            onInput: (e) => { planetSizeRef.current = +e.target.value; try { localStorage.setItem("novae-plsize", e.target.value); } catch (er) {} drawRef.current(); },
+          })),
         chip("🛰 " + I18N.t("sky_satellites"), showSats, () => setShowSats(!showSats)),
         chip("🌌 " + I18N.t("st_deepSky"), showDeepSky, () => setShowDeepSky(!showDeepSky)),
         chip("💥 " + I18N.t("st_supernovae"), snFilter, () => setSnFilter(!snFilter), " chip-sn"),

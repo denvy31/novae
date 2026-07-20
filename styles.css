@@ -360,6 +360,7 @@ body {
 .closeup-canvas {
   width: 100%; height: 230px; display: block; border-radius: 16px; margin-bottom: 14px;
   background: radial-gradient(circle at 50% 45%, #0a1430, #04060f); border: 1px solid var(--border);
+  touch-action: none; /* sans ça, le navigateur mobile capte le glisser pour scroller au lieu de tourner la planète */
 }
 
 .sky-zoom {
@@ -444,10 +445,11 @@ body {
 .sim-speed {
   position: absolute; bottom: 16px; left: 16px; right: 16px;
   background: var(--panel-strong); border: 1px solid var(--border); border-radius: 14px;
-  padding: 12px 16px; display: flex; align-items: center; gap: 14px; backdrop-filter: blur(12px);
+  padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; backdrop-filter: blur(12px);
+  max-height: 40vh; overflow-y: auto;
 }
 .sim-speed label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-.sim-speed input { flex: 1; accent-color: var(--accent); }
+.sim-speed input { flex: 1 1 120px; min-width: 100px; accent-color: var(--accent); }
 .speed-val { font-size: 13px; font-weight: 700; min-width: 90px; text-align: right; color: #d4ecff; }
 
 .planet-info, .bortle-info {
@@ -983,3 +985,41 @@ body {
 /* bouton évolution mis en avant */
 .evo-btn { background: rgba(185,139,255,0.14); border-color: rgba(185,139,255,0.5); color: #e2ccff; font-weight: 600; }
 .evo-btn:hover { background: rgba(185,139,255,0.28); }
+/* toujours sur sa propre ligne : jamais poussé hors écran par les autres contrôles (bug corrigé) */
+.sim-speed .evo-btn { flex: 1 1 100%; text-align: center; order: 5; }
+
+/* Gros plan des planètes : bouton plein écran façon Google Earth */
+.closeup-wrap { position: relative; }
+.closeup-wrap.full {
+  position: fixed; inset: 0; z-index: 92; background: #010208;
+  display: flex; align-items: center; justify-content: center;
+}
+.closeup-wrap.full .closeup-canvas { width: 100%; height: 100%; border-radius: 0; margin-bottom: 0; border: none; }
+.closeup-expand, .closeup-collapse {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  width: 34px; height: 34px; border-radius: 10px; font-size: 16px; line-height: 1;
+  background: rgba(8,13,30,0.65); border: 1px solid var(--border-bright); color: var(--text);
+  cursor: pointer; backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center;
+}
+.closeup-expand:hover, .closeup-collapse:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.closeup-collapse { font-size: 22px; }
+.closeup-hint {
+  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: rgba(8,13,30,0.65); border: 1px solid var(--border); border-radius: 999px;
+  padding: 8px 16px; font-size: 12.5px; color: #d4ecff; backdrop-filter: blur(10px); white-space: nowrap;
+}
+
+/* Curseur « Taille des planètes » dans le menu ⚙ */
+.planetsize-row { display: flex; align-items: center; gap: 8px; flex-basis: 100%; padding: 2px 4px; }
+.planetsize-row span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.planetsize-row input { flex: 1; accent-color: var(--accent); }
+
+/* Quiz : sélecteur de niveau de difficulté */
+.diff-row { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.diff-btn { padding: 12px 18px; font-size: 14px; font-weight: 600; }
+.diff-easy { border-color: rgba(70,224,160,0.5); color: #9af0c0; background: rgba(70,224,160,0.08); }
+.diff-easy:hover { background: rgba(70,224,160,0.18); }
+.diff-medium { border-color: rgba(255,206,110,0.5); color: #ffe0a0; background: rgba(255,206,110,0.08); }
+.diff-medium:hover { background: rgba(255,206,110,0.18); }
+.diff-hard { border-color: rgba(255,93,108,0.5); color: #ffb0b8; background: rgba(255,93,108,0.08); }
+.diff-hard:hover { background: rgba(255,93,108,0.18); }
