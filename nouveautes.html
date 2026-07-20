@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NOVAÉ — Nouveautés récentes</title>
+<style>
+  :root { --bg:#04060f; --panel:#0b1228; --border:rgba(125,160,240,0.18); --text:#eaf0ff; --muted:#8794ba; --accent:#58c8ff; --accent2:#b98bff; --good:#46e0a0; --warn:#ff9d3c; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; padding:36px 18px 70px; }
+  .doc { max-width:760px; margin:0 auto; }
+  .hero { text-align:center; margin-bottom:34px; }
+  .hero .logo { font-size:38px; text-shadow:0 0 16px var(--accent),0 0 34px var(--accent2); }
+  h1 { font-family:Georgia,serif; font-size:26px; letter-spacing:2px; margin:6px 0 2px; }
+  .sub { color:var(--muted); font-size:13px; }
+  h2 { font-family:Georgia,serif; font-size:17px; margin:26px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border); text-shadow:0 0 14px rgba(88,200,255,0.2); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px 18px; margin-bottom:10px; }
+  ul { margin:0; padding-left:20px; }
+  li { font-size:13px; color:#d4dcf5; margin-bottom:7px; line-height:1.55; max-width:60ch; }
+  li:last-child { margin-bottom:0; }
+  li b { color:#fff; }
+  .bugs li { color:#ffd9b0; }
+  .bugs { background:rgba(255,157,60,0.08); border-color:rgba(255,157,60,0.3); }
+  .foot { text-align:center; color:var(--muted); font-size:11px; margin-top:36px; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <div class="hero">
+    <div class="logo">✦</div>
+    <h1>NOVAÉ — Nouveautés récentes</h1>
+    <div class="sub">Résumé condensé des dernières mises à jour</div>
+  </div>
+
+  <h2>🌌 Ciel</h2>
+  <div class="card"><ul>
+    <li><b>Boussole nettement plus stable</b> — suivi par gyroscope ancré une fois sur le nord, fini les rotations erratiques.</li>
+    <li><b>Soleil réaliste partout</b> — granulation animée + protubérances de plasma, sur tout le ciel (pas seulement en gros plan).</li>
+    <li>Planètes plus grandes, en <b>rotation permanente</b>, agrandies et accélérées au survol.</li>
+    <li>Ciel épuré : étoiles faibles atténuées, calques éteints clairement grisés dans le menu ⚙.</li>
+    <li><b>Visée précise</b> — un astre visé n'est plus confondu avec la constellation derrière.</li>
+    <li>Curseur de <b>taille des planètes</b> ; le pincement zoome même en mode suivi.</li>
+  </ul></div>
+
+  <h2>🪐 Planètes</h2>
+  <div class="card"><ul>
+    <li><b>Gros plan plein écran</b> façon Google Earth — glissez pour tourner la planète dans tous les sens.</li>
+    <li>Vitesse <b>temps réel</b> par défaut.</li>
+    <li>Nouveau panneau <b>« Évolution → trou noir »</b> : suivez le destin du Soleil jusqu'à la naine blanche, avec un trou noir final façon vraie photo EHT (M87*).</li>
+    <li>Barre de vitesse repositionnée — ne cache plus le système solaire.</li>
+  </ul></div>
+
+  <h2>⏳ Frise & 🎓 Univers</h2>
+  <div class="card"><ul>
+    <li><b>« Qu'est-ce qui a créé le Big Bang ? »</b> — explication en 4 étapes sourcées (NASA, inflation cosmique).</li>
+    <li><b>Quiz à 3 niveaux</b> (Facile/Moyen/Difficile), 24 questions au total.</li>
+    <li>Nouveaux faits sourcés : matière noire, exoplanètes confirmées, taille de l'Univers observable.</li>
+  </ul></div>
+
+  <h2>💡 Pollution & 🔔 Événements</h2>
+  <div class="card"><ul>
+    <li><b>Sites sombres réels</b> calculés depuis votre position GPS (OpenStreetMap) — partout dans le monde, plus une liste fixe.</li>
+    <li>Détails « où et quand observer » au clic sur chaque événement.</li>
+    <li>Actualités spatiales <b>vraiment traduites</b> en français (bascule VO possible).</li>
+  </ul></div>
+
+  <h2>✨ Accueil & lisibilité</h2>
+  <div class="card"><ul>
+    <li>Séquence d'ouverture supernova + <b>tutoriel guidé</b> : une main montre chaque fonctionnalité directement sur l'app réelle.</li>
+    <li><b>Mises à jour instantanées</b> — plus besoin de fermer/rouvrir plusieurs fois.</li>
+    <li><b>Texte moins dense partout</b> : lignes plus courtes, paragraphes longs redécoupés automatiquement, interligne augmenté.</li>
+  </ul></div>
+
+  <h2>🐛 Bugs corrigés récemment</h2>
+  <div class="card bugs"><ul>
+    <li>Fuite d'animation au survol d'une planète (tournait indéfiniment en arrière-plan).</li>
+    <li>Fenêtre « Évolution » trop grande, bouton fermer inatteignable.</li>
+    <li>Miniature du Soleil qui se figeait après une image.</li>
+    <li>Boussole qui faisait tourner le ciel n'importe comment près de la verticale.</li>
+  </ul></div>
+
+  <div class="foot">✦ NOVAÉ · denvy31.github.io/novae ✦</div>
+</div>
+</body>
+</html>
