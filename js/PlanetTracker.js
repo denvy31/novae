@@ -175,13 +175,16 @@ function PlanetTracker(props) {
     React.createElement("div", { className: "planet-stage" },
       React.createElement("canvas", { ref: mapRef, className: "planet-canvas", onClick: onMapClick }),
       React.createElement("div", { className: "sim-date", ref: dateRef }, "🗓 …"),
-      React.createElement("div", { className: "sim-speed" },
-        React.createElement("button", { className: "chip rt-btn" + (speed < 0.01 && speed > 0 ? " on" : ""), onClick: () => setSpeed(1 / 86400) }, "⏱ " + (lang === "fr" ? "Temps réel" : "Real time")),
-        React.createElement("input", { type: "range", min: 0, max: 365, step: 1, value: Math.round(speed), onChange: (e) => setSpeed(Number(e.target.value)) }),
-        React.createElement("span", { className: "speed-val" }, speed === 0 ? tr("pl_pause") : speed < 0.01 ? (lang === "fr" ? "Temps réel" : "Real time") : "×" + Math.round(speed * 86400).toLocaleString(I18N.locale())),
-        React.createElement("button", { className: "chip evo-btn", onClick: () => setEvoOpen(true) }, "🕰 " + (lang === "fr" ? "Évolution → trou noir" : "Evolution → black hole"))),
       evoOpen && React.createElement(SunEvolution, { lang, onClose: () => setEvoOpen(false) })
     ),
+
+    // barre de vitesse : sa propre case, ENTRE le système solaire et la fiche planète
+    // (avant : superposée en flottant sur le système solaire, elle en cachait le bas)
+    React.createElement("div", { className: "sim-speed" },
+      React.createElement("button", { className: "chip rt-btn" + (speed < 0.01 && speed > 0 ? " on" : ""), onClick: () => setSpeed(1 / 86400) }, "⏱ " + (lang === "fr" ? "Temps réel" : "Real time")),
+      React.createElement("input", { type: "range", min: 0, max: 365, step: 1, value: Math.round(speed), onChange: (e) => setSpeed(Number(e.target.value)) }),
+      React.createElement("span", { className: "speed-val" }, speed === 0 ? tr("pl_pause") : speed < 0.01 ? (lang === "fr" ? "Temps réel" : "Real time") : "×" + Math.round(speed * 86400).toLocaleString(I18N.locale())),
+      React.createElement("button", { className: "chip evo-btn", onClick: () => setEvoOpen(true) }, "🕰 " + (lang === "fr" ? "Évolution → trou noir" : "Evolution → black hole"))),
 
     React.createElement("aside", { className: "planet-info" },
       React.createElement("div", { className: "closeup-wrap" + (closeFull ? " full" : "") },
